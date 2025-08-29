@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Tool SB v8.1 · 레거시 호환 · 멀티탭 · 블록 독 · 템플릿→조건 · 라이브러리</title>
+<style>
+  :root{--pri:#4a90e2;--ok:#2ecc71;--warn:#f39c12;--err:#e74c3c;--bg:#f6faff;--card:#ffffff;--bd:#d5def0;--ink:#0f2242}
+  *{box-sizing:border-box;touch-action:manipulation}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5,"Pretendard","Apple SD Gothic Neo","맑은 고딕",system-ui}
+  header{background:linear-gradient(90deg,var(--pri),#6aa8f0);color:#fff;padding:14px 16px;font-weight:800;text-align:center}
+  .wrap{max-width:1200px;margin:0 auto;padding:12px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{padding:10px 12px;border:2px solid var(--bd);border-radius:12px;background:#fff;font-weight:800;cursor:pointer}
+  .tab.active{background:var(--pri);color:#fff;border-color:transparent}
+  .view{display:none;margin-top:12px}
+  .view.active{display:block}
+  .card{background:var(--card);border:2px solid var(--bd);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06);padding:12px}
+  h2{margin:0 0 8px;font-size:18px}
+  h3{margin:0 0 6px;font-size:16px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .grid{display:grid;gap:10px;grid-template-columns:repeat(12,minmax(0,1fr))}
+  .field{grid-column:span 6;display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1/-1}
+  input,select,button{padding:10px 12px;border:2px solid var(--bd);border-radius:12px;font-size:16px;background:#fff}
+  button{cursor:pointer;background:var(--pri);color:#fff;font-weight:800}
+  button.ghost{background:#eef4ff;color:#27446e}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;border:2px solid var(--bd);background:#f3f7ff;font-size:13px}
+  .list{max-height:300px;overflow:auto;border:2px solid var(--bd);border-radius:12px;padding:8px;background:#fbfdff}
+  .item{padding:8px;border-bottom:1px solid #e9effb;cursor:pointer}
+  .item:hover{background:#eef5ff}
+  .board{min-height:110px;border:2px dashed #c7d4ef;border-radius:12px;padding:8px;background:#fbfdff;position:relative}
+  .board.empty::after{content:"여기에 블록 놓기";position:absolute;left:12px;top:8px;color:#7b8fb0;font-size:14px}
+  .block{display:inline-flex;gap:8px;align-items:center;padding:10px 12px;margin:6px;border-radius:999px;border:2px solid #c6d5f1;background:#e9f1ff;cursor:grab;user-select:none;touch-action:none}
+  .block .arg{min-width:58px;padding:6px 8px;border:2px solid #c6d5f1;border-radius:10px;background:#fff}
+  .ghost{opacity:.6}
+  .code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0b1221;color:#d9e7ff;border-radius:10px;padding:10px;white-space:pre-wrap}
+  .trash{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);width:min(520px,92%);background:#fff;border:2px dashed #ffb4b4;color:#c0392b;border-radius:14px;text-align:center;padding:10px;font-weight:800;box-shadow:0 12px 24px rgba(0,0,0,.08);opacity:0;pointer-events:none;transition:.2s}
+  .trash.show{opacity:1}
+  .toast{position:fixed;right:12px;bottom:12px;background:#111b2b;color:#e6f0ff;padding:10px 12px;border-radius:10px;font-size:14px;box-shadow:0 10px 18px rgba(0,0,0,.2)}
+  .pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:2px solid #d7e2f5;background:#fff;cursor:pointer}
+  .pill input{border:none;padding:0 6px}
+  .hint{font-size:13px;color:#5a6d92}
+  /* Block Dock */
+  .dock{position:fixed;left:0;right:0;bottom:0;background:#ffffff;box-shadow:0 -8px 24px rgba(0,0,0,.08);border-top:2px solid var(--bd);border-radius:14px 14px 0 0;padding:8px;z-index:1000}
+  .dock .dock-tabs{display:flex;gap:8px;margin-bottom:6px}
+  .dock .dock-tab{padding:8px 10px;border:2px solid var(--bd);border-radius:12px;background:#f6f9ff;font-weight:800;cursor:pointer}
+  .dock .dock-tab.active{background:var(--pri);color:#fff;border-color:transparent}
+  .dock .dock-body{display:flex;gap:8px;overflow:auto;white-space:nowrap}
+  .dock .block{margin:6px 6px}
+  .fab{position:fixed;right:14px;bottom:80px;background:var(--pri);color:#fff;border-radius:999px;padding:14px 16px;font-weight:900;box-shadow:0 10px 18px rgba(0,0,0,.2);cursor:pointer}
+</style>
+</head>
+<body>
+<header>Tool SB v8.1 — 멀티탭 · 블록 독 · 템플릿→조건 · 라이브러리 (KR UI → EN IR · 정수 ID 권장)</header>
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab active" data-tab="basic">상태 기본</div>
+    <div class="tab" data-tab="blocks">블록 제작</div>
+    <div class="tab" data-tab="library">효과 라이브러리</div>
+    <div class="tab" data-tab="validate">검사/입출력</div>
+  </div>
+
+  <!-- 상태 기본 탭 -->
+  <section class="view active" id="view-basic">
+    <div class="card">
+      <h2>① 속성(A단계) 불러오기 <span id="attrState" class="badge">필수</span></h2>
+      <div class="row">
+        <button id="btnAttr">📂 속성 JSON</button>
+        <input id="fileAttr" type="file" accept="application/json" style="display:none"/>
+        <span id="attrInfo" class="badge ghost">—</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h2>② 상태 설정</h2>
+      <div class="grid">
+        <div class="field"><span>상태 ID (정수 권장)</span><input id="stIdNum" type="number" value="1" min="0"/></div>
+        <div class="field"><span>이름</span><input id="stName" placeholder="예: 마비"/></div>
+        <div class="field full"><span>설명</span><input id="stDesc" placeholder="툴팁"/></div>
+        <div class="field"><span>지속</span>
+          <select id="durMode"><option value="fixed">고정</option><option value="random">랜덤(min~max)</option></select>
+        </div>
+        <div class="field"><span>고정 턴</span><input id="durFixed" type="number" value="0" min="0"/><div class="hint">0 = 무제한</div></div>
+        <div class="field"><span>최소 턴</span><input id="durMin" type="number" value="2" min="1"/></div>
+        <div class="field"><span>최대 턴</span><input id="durMax" type="number" value="5" min="1"/></div>
+        <div class="field"><span>중첩</span>
+          <select id="stStack"><option value="none">불가</option><option value="replace">대체</option><option value="stack">누적</option></select>
+        </div>
+        <div class="field"><span>지속 범위</span>
+          <select id="stScope"><option value="entity">개체(몬)</option><option value="field">필드(전장)</option></select>
+        </div>
+        <div class="field full"><span>그룹 태그</span>
+          <div id="groupChips" class="row"></div>
+          <div class="row"><span class="pill">추가<input id="groupInput" placeholder="입력 후 Enter"/></span>
+            <div class="row hint">추천: <span class="pill tip" data-tag="행동제약">행동제약</span><span class="pill tip" data-tag="지속피해">지속피해</span><span class="pill tip" data-tag="날씨">날씨</span><span class="pill tip" data-tag="속성변환">속성변환</span></div>
+          </div>
+        </div>
+        <div class="field"><span>상호배타(같은 그룹끼리)</span>
+          <select id="stExclMode"><option value="none">없음</option><option value="fail">겹치면 실패</option><option value="overwrite">겹치면 덮어쓰기</option></select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="btnSaveSt">💾 저장/갱신</button>
+        <button id="btnNewSt" class="ghost">＋ 새로</button>
+        <button id="btnDelSt" style="background:#e05a61">🗑️ 삭제</button>
+        <span id="countInfo" class="badge">—</span>
+      </div>
+      <h3 style="margin-top:8px">상태 목록</h3>
+      <div id="statusList" class="list"></div>
+    </div>
+  </section>
+
+  <!-- 블록 제작 탭 -->
+  <section class="view" id="view-blocks">
+    <div class="card">
+      <h2>③ 블록으로 효과 만들기</h2>
+      <div class="row">
+        <span class="badge">표시는 한국어, 적용은 EN 키</span>
+        <span class="badge">발동 확률(%) <input id="efChance" type="number" min="0" max="100" value="100" style="width:90px"></span>
+        <span class="badge">대상
+          <select id="efTarget"><option value="self">자신</option><option value="foe">상대</option><option value="field">필드</option></select>
+        </span>
+        <span class="badge">극성
+          <select id="efPol"><option value="neutral">중립</option><option value="positive">긍정</option><option value="negative">부정</option></select>
+        </span>
+      </div>
+      <div class="grid" style="margin-top:8px">
+        <div class="field full"><span>언제? (when)</span><div id="boardWhen" class="board empty"></div></div>
+        <div class="field full"><span>만약 (if) — 조건</span><div id="boardIf" class="board empty"></div></div>
+        <div class="field full"><span>그렇지 않으면 (elif) — 조건</span><div id="boardElif" class="board empty"></div></div>
+        <div class="field full"><span>무엇을? (do — if)</span><div id="boardDoIf" class="board empty"></div></div>
+        <div class="field full"><span>무엇을? (do — elif)</span><div id="boardDoElif" class="board empty"></div></div>
+        <div class="field full"><span>무엇을? (do — else)</span><div id="boardDoElse" class="board empty"></div></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="btnToIR">블록→IR</button>
+        <button id="btnPushEffect" style="background:#2ecc71">현재 상태에 효과 추가</button>
+        <button id="btnClearBoards" class="ghost">보드 비우기</button>
+      </div>
+      <h3 style="margin-top:8px">IR 미리보기</h3>
+      <pre id="irView" class="code">[]</pre>
+    </div>
+  </section>
+
+  <!-- 효과 라이브러리 탭 -->
+  <section class="view" id="view-library">
+    <div class="card">
+      <h2>④ 효과 라이브러리(현재 상태)</h2>
+      <div class="row"><button id="btnExportEffects" class="ghost">선택된 상태 효과만 내보내기</button></div>
+      <div id="effectsList" class="list" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="btnEditFromEffect">선택을 보드로 불러오기</button>
+        <button id="btnDeleteEffect" style="background:#e05a61">선택 삭제</button>
+        <button id="btnDupEffect" class="ghost">선택 복제</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 검사/입출력 탭 -->
+  <section class="view" id="view-validate">
+    <div class="card">
+      <h2>⑤ 검사 & 입/출력</h2>
+      <div class="row">
+        <button id="btnValidate" style="background:#f39c12">논리 검사</button>
+        <button id="btnExportAll">📤 전체 내보내기(JSON)</button>
+        <button id="btnImportAll" class="ghost">📥 불러오기(JSON)</button>
+        <input id="fileAll" type="file" accept="application/json" style="display:none"/>
+      </div>
+      <div id="valArea" class="list" style="margin-top:8px"></div>
+    </div>
+  </section>
+</div>
+
+<!-- Block Dock: 고정 팔레트 -->
+<div class="dock" id="dock">
+  <div class="dock-tabs">
+    <div class="dock-tab active" data-dock="when">When</div>
+    <div class="dock-tab" data-dock="if">조건</div>
+    <div class="dock-tab" data-dock="do">액션</div>
+    <div class="dock-tab" data-dock="tmpl">템플릿</div>
+  </div>
+  <div class="dock-body" id="dockBody"></div>
+</div>
+<div class="fab" id="fab">＋ 블록</div>
+
+<div id="trash" class="trash">여기로 끌면 삭제 🗑️</div>
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+(function(){
+  function $(s){return document.querySelector(s);} 
+  function $all(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
+  var el={
+    // tabs
+    tabBtns:$all('.tab'), views:{ basic:$('#view-basic'), blocks:$('#view-blocks'), library:$('#view-library'), validate:$('#view-validate') },
+    // attr
+    btnAttr:$('#btnAttr'), fileAttr:$('#fileAttr'), attrState:$('#attrState'), attrInfo:$('#attrInfo'),
+    // status
+    stIdNum:$('#stIdNum'), stName:$('#stName'), stDesc:$('#stDesc'), durMode:$('#durMode'), durFixed:$('#durFixed'), durMin:$('#durMin'), durMax:$('#durMax'), stStack:$('#stStack'), stScope:$('#stScope'), stExclMode:$('#stExclMode'),
+    groupChips:$('#groupChips'), groupInput:$('#groupInput'), groupTips:$all('.tip'),
+    btnSaveSt:$('#btnSaveSt'), btnNewSt:$('#btnNewSt'), btnDelSt:$('#btnDelSt'), statusList:$('#statusList'), countInfo:$('#countInfo'),
+    // blocks boards
+    boardWhen:$('#boardWhen'), boardIf:$('#boardIf'), boardElif:$('#boardElif'), boardDoIf:$('#boardDoIf'), boardDoElif:$('#boardDoElif'), boardDoElse:$('#boardDoElse'),
+    efChance:$('#efChance'), efTarget:$('#efTarget'), efPol:$('#efPol'), btnToIR:$('#btnToIR'), btnPush:$('#btnPushEffect'), btnClear:$('#btnClearBoards'), irView:$('#irView'),
+    // library
+    effectsList:$('#effectsList'), btnEditFromEffect:$('#btnEditFromEffect'), btnDeleteEffect:$('#btnDeleteEffect'), btnDupEffect:$('#btnDupEffect'), btnExportEffects:$('#btnExportEffects'),
+    // validate/io
+    btnValidate:$('#btnValidate'), valArea:$('#valArea'), btnExportAll:$('#btnExportAll'), btnImportAll:$('#btnImportAll'), fileAll:$('#fileAll'),
+    // dock
+    dock:$('#dock'), dockTabs:$all('.dock-tab'), dockBody:$('#dockBody'), fab:$('#fab'),
+    // misc
+    trash:$('#trash'), toast:$('#toast')
+  };
+
+  // ====== App State ======
+  var PACK={ meta:{title:'Monmus DB',version:1,generator:'ToolSB-v8.1'}, kind:'statuses', attributes:[], typeChart:[], statuses:[] };
+  var cur=-1; // 현재 선택 상태 인덱스
+  var selEffect=-1; // 라이브러리 선택 인덱스
+
+  // ====== Tabs ======
+  el.tabBtns.forEach(function(btn){ btn.onclick=function(){ switchTab(btn.getAttribute('data-tab')); }; });
+  function switchTab(name){
+    el.tabBtns.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===name); });
+    for(var k in el.views){ el.views[k].classList.remove('active'); }
+    el.views[name].classList.add('active');
+  }
+
+  // ====== Toast ======
+  function toast(msg){ el.toast.textContent=msg; el.toast.style.display='block'; clearTimeout(el.toast._t); el.toast._t=setTimeout(function(){ el.toast.style.display='none'; },1200); }
+
+  // ====== Group Chips UI ======
+  var GROUPS=[];
+  function renderGroups(){ el.groupChips.innerHTML=''; if(GROUPS.length){ GROUPS.forEach(function(g,i){ var chip=document.createElement('span'); chip.className='pill'; chip.textContent=g; chip.title='클릭하면 제거'; chip.onclick=function(){ GROUPS.splice(i,1); renderGroups(); }; el.groupChips.appendChild(chip); }); } else { var hint=document.createElement('span'); hint.className='hint'; hint.textContent='(아직 없음)'; el.groupChips.appendChild(hint);} }
+  el.groupInput.addEventListener('keydown',function(e){ if(e.key==='Enter'){ var v=e.target.value.trim(); if(v){ GROUPS.push(v); renderGroups(); e.target.value=''; } }});
+  el.groupTips.forEach(function(t){ t.onclick=function(){ GROUPS.push(t.getAttribute('data-tag')); renderGroups(); }; });
+
+  // ====== Attr Load ======
+  el.btnAttr.onclick=function(){ el.fileAttr.click(); };
+  el.fileAttr.onchange=async function(e){ var f=e.target.files && e.target.files[0]; if(!f) return; try{ var txt=await f.text(); var data=JSON.parse(txt); if(!Array.isArray(data.attributes)||data.attributes.length===0) throw 0; PACK.attributes=data.attributes; PACK.typeChart=data.typeChart||[]; el.attrState.textContent='불러옴 ✅'; el.attrInfo.textContent='속성 '+PACK.attributes.length+'개'; }catch(err){ alert('⚠️ 속성 JSON(A단계) 필요'); } e.target.value=''; };
+
+  // ====== Status CRUD ======
+  function durationObj(){ if(el.durMode.value==='random'){ show(el.durMin,true); show(el.durMax,true); show(el.durFixed,false); return {mode:'random',min:num(el.durMin.value,1),max:Math.max(num(el.durMin.value,1),num(el.durMax.value,1))}; } else { show(el.durMin,false); show(el.durMax,false); show(el.durFixed,true); return {mode:'fixed',value:num(el.durFixed.value,0)}; } }
+  function upsert(){ var id=parseInt(el.stIdNum.value||'0',10); if(isNaN(id)) return alert('정수 ID 입력'); var s={ id:id, name:el.stName.value||String(id), desc:el.stDesc.value||'', duration:durationObj(), stackMode:el.stStack.value, scope:el.stScope.value, groups:GROUPS.slice(), exclMode:el.stExclMode.value, effects:(PACK.statuses[cur]&&PACK.statuses[cur].effects)||[] }; var i=PACK.statuses.findIndex(function(x){return String(x.id)===String(id);}); if(i>=0){ PACK.statuses[i]=s; cur=i; } else { PACK.statuses.push(s); cur=PACK.statuses.length-1; } renderStatus(); select(cur); toast('저장됨'); }
+  function remove(){ if(cur<0) return; PACK.statuses.splice(cur,1); renderStatus(); clearStatusForm(); }
+  function clearStatusForm(){ cur=-1; el.stIdNum.value=1; el.stName.value=''; el.stDesc.value=''; el.durMode.value='fixed'; el.durFixed.value=0; el.durMin.value=2; el.durMax.value=5; el.stStack.value='none'; el.stScope.value='entity'; GROUPS=[]; renderGroups(); el.stExclMode.value='none'; el.countInfo.textContent='—'; el.statusList.innerHTML=''; el.effectsList.innerHTML=''; selEffect=-1; }
+  function renderStatus(){ el.statusList.innerHTML=''; PACK.statuses.sort(function(a,b){ return String(a.id).localeCompare(String(b.id),undefined,{numeric:true}); }); PACK.statuses.forEach(function(s,i){ var row=document.createElement('div'); row.className='item'; row.textContent=s.id+' · '+s.name+' · ['+((s.groups||[]).join('|')||'-')+']'; row.onclick=function(){ select(i); }; el.statusList.appendChild(row); }); el.countInfo.textContent='상태 '+PACK.statuses.length+'개 · 속성 '+PACK.attributes.length+'개'; }
+  function select(i){ cur=i; var s=PACK.statuses[i]; if(!s) return; el.stIdNum.value=s.id; el.stName.value=s.name||''; el.stDesc.value=s.desc||''; if(s.duration && s.duration.mode==='random'){ el.durMode.value='random'; el.durMin.value=s.duration.min||2; el.durMax.value=s.duration.max||5; } else { el.durMode.value='fixed'; el.durFixed.value=(s.duration && typeof s.duration.value!=='undefined')? s.duration.value:0; } durationObj(); el.stStack.value=s.stackMode||'none'; el.stScope.value=s.scope||'entity'; GROUPS=(s.groups||[]).slice(); renderGroups(); el.stExclMode.value=s.exclMode||'none'; renderEffectsList(); }
+  el.btnSaveSt.onclick=upsert; el.btnNewSt.onclick=clearStatusForm; el.btnDelSt.onclick=remove; el.durMode.onchange=durationObj; renderStatus(); renderGroups();
+
+  // ====== Blocks & Dock ======
+  // 모바일 가속: 탭=추가, 롱프레스=드래그. 팔레트(독) 블록은 삭제 불가
+  var dragObj=null, dragStartAt=0, dragging=false, fromDock=false; var LONG=120;
+  function makeDraggable(b){
+    b.addEventListener('pointerdown',function(e){ dragStartAt=Date.now(); dragObj=b; fromDock=b.getAttribute('data-dock')==='1'; dragging=false; if(b.setPointerCapture){ try{ b.setPointerCapture(e.pointerId);}catch(_){} } });
+    b.addEventListener('pointermove',function(e){ if(!dragObj) return; if(!dragging && Date.now()-dragStartAt>LONG){ dragging=true; el.trash.classList.add('show'); }
+      if(dragging){ b.style.position='fixed'; b.style.left=(e.clientX-40)+'px'; b.style.top=(e.clientY-20)+'px'; b.style.zIndex=9999; }
+    });
+    b.addEventListener('pointerup',function(e){ if(!dragObj) return; if(b.releasePointerCapture){ try{ b.releasePointerCapture(e.pointerId);}catch(_){} }
+      if(!dragging){ // 탭: 빠른 추가
+        if(fromDock){ var clone=createBlock(JSON.parse(b.dataset.payload)); appendToNearestBoard(e.clientX,e.clientY,clone); toast('블록 추가'); }
+      } else {
+        var target=boardUnder(e.clientX,e.clientY);
+        if(target){ var node=(fromDock? createBlock(JSON.parse(b.dataset.payload)):b); resetPos(node); target.appendChild(node); target.classList.remove('empty'); if(fromDock) toast('복제됨'); // 템플릿 자동 변환
+          autoConvertOnDrop(node,target);
+        } else { // 보드에서만 삭제
+          if(!fromDock){ b.parentNode && b.parentNode.removeChild(b); toast('블록 삭제'); }
+        }
+      }
+      dragObj=null; dragging=false; fromDock=false; el.trash.classList.remove('show'); resetPos(b);
+    });
+  }
+  function resetPos(b){ b.style.position=''; b.style.left=''; b.style.top=''; b.style.zIndex=''; }
+  function boardUnder(x,y){ var boards=[el.boardWhen,el.boardIf,el.boardElif,el.boardDoIf,el.boardDoElif,el.boardDoElse]; for(var i=0;i<boards.length;i++){ var r=boards[i].getBoundingClientRect(); if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom) return boards[i]; } return null; }
+  function appendToNearestBoard(x,y,blk){ var boards=[el.boardWhen,el.boardIf,el.boardElif,el.boardDoIf,el.boardDoElif,el.boardDoElse]; var best=null,dist=1e9; boards.forEach(function(b){ var r=b.getBoundingClientRect(); var cx=r.left+r.width/2, cy=r.top+r.height/2; var d=(cx-x)*(cx-x)+(cy-y)*(cy-y); if(d<dist){dist=d;best=b;} }); best.appendChild(blk); best.classList.remove('empty'); autoConvertOnDrop(blk,best); }
+
+  // 팔레트 데이터
+  var WHEN_KR_EN={ '턴 시작':'onTurnStart','행동 전':'onBeforeMove','데미지 계산':'onDamageCalc','공격 적중 시':'onHit','피격 시':'onReceiveHit','행동 후':'onAfterMove','턴 종료':'onTurnEnd','교체 시(등장)':'onSwitchIn','교체 시(퇴장)':'onSwitchOut','전투 시작':'onBattleStart','전투 종료':'onBattleEnd' };
+  var DO_MAP={ skipTurn:'턴 스킵 %', heal:'회복 %', dot:'도트 %', addStage:'능력치 단계 ±', scaleStat:'능력치 비례 ±%', setAttr:'속성 바꾸기', modAccuracy:'명중 보정 ±%', modEvasion:'회피 보정 ±%', modCritStage:'크리 단계 ±', modPriority:'우선도 ±', reduceDamage:'데미지 감소 %', reflectDamage:'피해 반사 %', noEscape:'도주/교체 금지', applyStatus:'상태 부여', clearStatus:'상태 제거', modContract:'계약 확률 ±%', modSwallow:'삼키기 확률 ±%', modSwallowed:'삼켜질 확률 ±%', setFlag:'플래그 세팅', setWeather:'날씨 설정', setTerrain:'지형 설정', shield:'보호막(흡수량%)', guardNext:'다음 타격 경감%' };
+  function B(label,payload,args){ return {label:label,payload:JSON.parse(JSON.stringify(payload)),args:args||[]}; }
+  // Dock Palettes
+  var DOCK={
+    when: Object.keys(WHEN_KR_EN).map(function(k){return B(k,{type:'when',when:WHEN_KR_EN[k]});}),
+    if: [
+      B('자신 HP ≤ %',{type:'if',left:'self.hpRatio',op:'<=',right:0.5},[{key:'right',ph:'0.5'}]),
+      B('자신 HP ≥ %',{type:'if',left:'self.hpRatio',op:'>=',right:0.5},[{key:'right',ph:'0.5'}]),
+      B('상대 HP ≤ %',{type:'if',left:'foe.hpRatio',op:'<=',right:0.5},[{key:'right',ph:'0.5'}]),
+      B('상대 HP ≥ %',{type:'if',left:'foe.hpRatio',op:'>=',right:0.5},[{key:'right',ph:'0.5'}]),
+      B('HP 범위(자신)',{type:'if',left:'self.hpRatio',op:'between',min:0.2,max:0.6},[{key:'min',ph:'0.2'},{key:'max',ph:'0.6'}]),
+      B('속성 =',{type:'if',left:'self.attrId',op:'==',right:0},[{key:'right',ph:'attrId'}]),
+      B('상태 보유',{type:'if',left:'self.hasStatus',op:'==',right:true},[{key:'right',ph:'true/false'}]),
+      B('상태 그룹 보유',{type:'if',left:'self.hasStatusGroup',op:'==',right:'행동제약'},[{key:'right',ph:'그룹명'}]),
+      B('속성 상성 보너스',{type:'if',left:'typeChart',op:'advantage',right:'self->foe'}),
+      B('공격 분류 = 물리',{type:'if',left:'attack.category',op:'==',right:'PHYSICAL'}),
+      B('공격 태그에 접촉',{type:'if',left:'attack.tags',op:'includes',right:'contact'}),
+      B('날씨 =',{type:'if',left:'flags.weather',op:'==',right:'rain'},[{key:'right',ph:'rain/sun/...'}]),
+      B('지형 =',{type:'if',left:'flags.terrain',op:'==',right:'electric'},[{key:'right',ph:'electric/...'}]),
+      B('무작위 ≤ %',{type:'if',left:'rand()',op:'<=',right:30},[{key:'right',ph:'30'}]),
+      B('턴 번호 ≥',{type:'if',left:'turn',op:'>=',right:3},[{key:'right',ph:'3'}]),
+      B('속도 비교(자신>상대)',{type:'if',left:'compare.spe',op:'==',right:'self>foe'})
+    ],
+    do: [
+      B(DO_MAP.skipTurn,{type:'do',op:'skipTurn',target:'self',chanceP:25},[{key:'chanceP',ph:'25'}]),
+      B(DO_MAP.heal,{type:'do',op:'heal',target:'self',percent:6.25},[{key:'percent',ph:'6.25'}]),
+      B(DO_MAP.dot,{type:'do',op:'dot',target:'self',percent:6.25},[{key:'percent',ph:'6.25'}]),
+      B(DO_MAP.addStage,{type:'do',op:'addStage',target:'self',stat:'ATK',delta:1},[{key:'stat',ph:'ATK'},{key:'delta',ph:'1'}]),
+      B(DO_MAP.scaleStat,{type:'do',op:'scaleStat',target:'self',stat:'ATK',percent:-50},[{key:'stat',ph:'ATK'},{key:'percent',ph:'-50'}]),
+      B(DO_MAP.setAttr,{type:'do',op:'setAttr',target:'self',attrId:0},[{key:'attrId',ph:'attrId'}]),
+      B(DO_MAP.modAccuracy,{type:'do',op:'modAccuracy',target:'self',addPercent:-20},[{key:'addPercent',ph:'-20'}]),
+      B(DO_MAP.modEvasion,{type:'do',op:'modEvasion',target:'self',addPercent:15},[{key:'addPercent',ph:'15'}]),
+      B(DO_MAP.modCritStage,{type:'do',op:'modCritStage',target:'self',delta:1},[{key:'delta',ph:'1'}]),
+      B(DO_MAP.modPriority,{type:'do',op:'modPriority',target:'self',delta:1},[{key:'delta',ph:'1'}]),
+      B(DO_MAP.reduceDamage,{type:'do',op:'reduceDamage',target:'self',percent:20},[{key:'percent',ph:'20'}]),
+      B(DO_MAP.reflectDamage,{type:'do',op:'reflectDamage',target:'self',percent:30},[{key:'percent',ph:'30'}]),
+      B(DO_MAP.noEscape,{type:'do',op:'noEscape',target:'foe'}),
+      B(DO_MAP.applyStatus,{type:'do',op:'applyStatus',target:'foe',statusId:1,chanceP:20},[{key:'statusId',ph:'상태ID'},{key:'chanceP',ph:'20'}]),
+      B(DO_MAP.clearStatus,{type:'do',op:'clearStatus',target:'self',statusId:1},[{key:'statusId',ph:'상태ID'}]),
+      B(DO_MAP.modContract,{type:'do',op:'modContract',target:'foe',addPercent:5},[{key:'addPercent',ph:'5'}]),
+      B(DO_MAP.modSwallow,{type:'do',op:'modSwallow',target:'self',addPercent:10},[{key:'addPercent',ph:'10'}]),
+      B(DO_MAP.modSwallowed,{type:'do',op:'modSwallowed',target:'self',addPercent:10},[{key:'addPercent',ph:'10'}]),
+      B(DO_MAP.setWeather,{type:'do',op:'setWeather',target:'field',value:'rain'},[{key:'value',ph:'rain/sun/...'}]),
+      B(DO_MAP.setTerrain,{type:'do',op:'setTerrain',target:'field',value:'electric'},[{key:'value',ph:'electric/...'}]),
+      B(DO_MAP.shield,{type:'do',op:'shield',target:'self',percent:20,duration:2},[{key:'percent',ph:'20'},{key:'duration',ph:'2'}]),
+      B(DO_MAP.guardNext,{type:'do',op:'guardNext',target:'self',percent:50},[{key:'percent',ph:'50'}])
+    ],
+    tmpl: [ // 템플릿: 드롭 보드에 맞춰 자동 변환
+      B('HP 적을 때(자신)',{type:'tmpl',to:'if',tpl:'hpLowSelf',right:0.3},[{key:'right',ph:'0.3'}]),
+      B('HP 많을 때(자신)',{type:'tmpl',to:'if',tpl:'hpHighSelf',right:0.7},[{key:'right',ph:'0.7'}]),
+      B('HP 적을 때(상대)',{type:'tmpl',to:'if',tpl:'hpLowFoe',right:0.3},[{key:'right',ph:'0.3'}]),
+      B('접촉 공격일 때',{type:'tmpl',to:'if',tpl:'tagContact'}),
+      B('날씨가 비일 때',{type:'tmpl',to:'if',tpl:'weatherRain'}),
+      B('행동 전 이벤트',{type:'tmpl',to:'when',tpl:'onBeforeMove'})
+    ]
+  };
+
+  // Dock render
+  function renderDock(which){ el.dockTabs.forEach(function(t){ t.classList.toggle('active',t.getAttribute('data-dock')===which); }); el.dockBody.innerHTML=''; (DOCK[which]||[]).forEach(function(it){ var b=makeBlock(it.label,it.payload,it.args,true); el.dockBody.appendChild(b); }); }
+  el.dockTabs.forEach(function(t){ t.onclick=function(){ renderDock(t.getAttribute('data-dock')); }; }); renderDock('when');
+  el.fab.onclick=function(){ el.dock.style.display= (el.dock.style.display==='none'?'':'none'); };
+
+  function makeBlock(label,payload,args,isDock){ var b=document.createElement('div'); b.className='block'; b.textContent=''; var strong=document.createElement('strong'); strong.textContent=label; b.appendChild(strong); b.dataset.payload=JSON.stringify(payload); if(isDock) b.setAttribute('data-dock','1'); (args||[]).forEach(function(a){ var s=document.createElement('span'); s.className='arg'; s.setAttribute('data-key',a.key); s.contentEditable=true; s.textContent=a.ph; b.appendChild(s); }); makeDraggable(b); return b; }
+  function createBlock(payload){ var label=korLabel(payload); var args=defaultArgs(payload); return makeBlock(label,payload,args,false); }
+  function korLabel(p){ if(p.type==='when'){ // EN when → KR 라벨 역매핑
+      var found=null; for(var kr in WHEN_KR_EN){ if(WHEN_KR_EN[kr]===p.when){ found=kr; break; } } return found||p.when; }
+    if(p.type==='if'){ var map={'<=':'≤','>=':'≥','==':'='}; var rhs=(('min' in p)||('max' in p))? (p.min+'~'+p.max) : (typeof p.right!=='undefined'? p.right : ''); return '조건('+p.left+' '+(map[p.op]||p.op)+' '+rhs+')'; }
+    if(p.type==='do'){ return DO_MAP[p.op]||p.op; }
+    if(p.type==='tmpl'){ return '템플릿:'+p.tpl; }
+    return '블록'; }
+  function defaultArgs(p){ if(p.type==='do'){ switch(p.op){ case 'skipTurn': return [{key:'chanceP',ph:String(p.chanceP||25)}]; case 'heal': case 'dot': case 'reduceDamage': case 'reflectDamage': return [{key:'percent',ph:String(p.percent||10)}]; case 'addStage': return [{key:'stat',ph:p.stat||'ATK'},{key:'delta',ph:String(p.delta||1)}]; case 'scaleStat': return [{key:'stat',ph:p.stat||'ATK'},{key:'percent',ph:String(p.percent||-50)}]; case 'setAttr': return [{key:'attrId',ph:String((p.attrId!=null?p.attrId:0))}]; case 'modAccuracy': case 'modEvasion': case 'modContract': case 'modSwallow': case 'modSwallowed': return [{key:'addPercent',ph:String(p.addPercent||5)}]; case 'modCritStage': case 'modPriority': return [{key:'delta',ph:String(p.delta||1)}]; case 'applyStatus': return [{key:'statusId',ph:String(p.statusId||1)},{key:'chanceP',ph:String(p.chanceP||20)}]; case 'clearStatus': return [{key:'statusId',ph:String(p.statusId||1)}]; case 'setWeather': case 'setTerrain': return [{key:'value',ph:String(p.value||'value')}]; case 'shield': return [{key:'percent',ph:String(p.percent||20)},{key:'duration',ph:String(p.duration||2)}]; case 'guardNext': return [{key:'percent',ph:String(p.percent||50)}]; } } if(p.type==='if'){ if(p.op==='between') return [{key:'min',ph:String(p.min)},{key:'max',ph:String(p.max)}]; if(typeof p.right!=='undefined') return [{key:'right',ph:String(p.right)}]; } if(p.type==='tmpl'){ if(typeof p.right!=='undefined') return [{key:'right',ph:String(p.right)}]; } return []; }
+
+  function payloadWithArgs(b){ var p=JSON.parse(b.dataset.payload); var args=b.querySelectorAll('.arg'); for(var i=0;i<args.length;i++){ var a=args[i]; var key=a.getAttribute('data-key'); var v=a.textContent.trim(); if(/^[-+]?\d+(?:\.\d+)?$/.test(v)) v=Number(v); if(v==='true') v=true; if(v==='false') v=false; p[key]=v; } return p; }
+
+  function collect(board){ return Array.prototype.slice.call(board.querySelectorAll('.block')); }
+
+  function autoConvertOnDrop(node,target){ var p=payloadWithArgs(node); if(p.type==='tmpl'){ // 템플릿을 보드에 맞게 변환
+      var conv=null; if(target===el.boardWhen && p.to==='when'){ if(p.tpl==='onBeforeMove') conv={type:'when',when:'onBeforeMove'}; }
+      else { // 조건 보드로
+        if(p.tpl==='hpLowSelf') conv={type:'if',left:'self.hpRatio',op:'<=',right:p.right||0.3};
+        if(p.tpl==='hpHighSelf') conv={type:'if',left:'self.hpRatio',op:'>=',right:p.right||0.7};
+        if(p.tpl==='hpLowFoe') conv={type:'if',left:'foe.hpRatio',op:'<=',right:p.right||0.3};
+        if(p.tpl==='tagContact') conv={type:'if',left:'attack.tags',op:'includes',right:'contact'};
+        if(p.tpl==='weatherRain') conv={type:'if',left:'flags.weather',op:'==',right:'rain'};
+      }
+      if(conv){ node.dataset.payload=JSON.stringify(conv); var replaced=createBlock(conv); node.parentNode && node.parentNode.replaceChild(replaced,node); }
+    }
+  }
+
+  // ====== Blocks → IR ======
+  function blocksToIR(){ var whenBlocks=collect(el.boardWhen); if(!whenBlocks.length) return alert('when 블록이 필요해'); var whenList=whenBlocks.map(function(b){return payloadWithArgs(b).when;});
+    var actsIf=collect(el.boardDoIf).map(payloadWithArgs).map(function(p){ if(!p.target) p.target=el.efTarget.value; return p; });
+    var actsElif=collect(el.boardDoElif).map(payloadWithArgs).map(function(p){ if(!p.target) p.target=el.efTarget.value; return p; });
+    var actsElse=collect(el.boardDoElse).map(payloadWithArgs).map(function(p){ if(!p.target) p.target=el.efTarget.value; return p; });
+    if(actsIf.length===0 && actsElif.length===0 && actsElse.length===0) return alert('do 블록이 없음');
+    var ifConds=collect(el.boardIf).map(payloadWithArgs); var elifConds=collect(el.boardElif).map(payloadWithArgs);
+    var p=Math.max(0,Math.min(100, num(el.efChance.value,100)));
+    var baseWhen=(whenList.length===1? whenList[0] : {join:'OR',any:whenList});
+    var branch=[]; if(ifConds.length||actsIf.length) branch.push({ if: ifConds, do: actsIf, polarity: el.efPol.value }); if(elifConds.length||actsElif.length) branch.push({ elif: elifConds, do: actsElif, polarity: el.efPol.value }); if(actsElse.length) branch.push({ else: true, do: actsElse, polarity: el.efPol.value });
+    var ir={ when: baseWhen, branch: branch }; if(p<100) ir.if=[{left:'rand()',op:'<=',right:p}];
+    el.irView.textContent=JSON.stringify([ir],null,2); return [ir]; }
+  function num(v,def){ var n=Number(v); return isFinite(n)?n:(typeof def==='number'?def:0); }
+  el.btnToIR.onclick=blocksToIR;
+
+  el.btnPush.onclick=function(){ if(cur<0) return toast('먼저 상태 저장'); var ir=blocksToIR(); if(!ir) return; var s=PACK.statuses[cur]; s.effects=s.effects||[]; Array.prototype.push.apply(s.effects,ir); renderEffectsList(); clearBoards(); toast('효과 추가됨'); };
+  el.btnClear.onclick=clearBoards; function clearBoards(){ [el.boardWhen,el.boardIf,el.boardElif,el.boardDoIf,el.boardDoElif,el.boardDoElse].forEach(function(x){ x.innerHTML=''; x.classList.add('empty'); }); el.irView.textContent='[]'; }
+
+  // ====== Library ======
+  function renderEffectsList(){ el.effectsList.innerHTML=''; selEffect=-1; var s=PACK.statuses[cur]; if(!s){ el.effectsList.innerHTML='<div class="item">(상태 선택)</div>'; return; } (s.effects||[]).forEach(function(ef,i){ var row=document.createElement('div'); row.className='item'; var whenTxt=(typeof ef.when==='string')? ef.when : ((ef.when && ef.when.any)||[]).join(' ∥ ');
+      row.innerHTML='<b>#'+(i+1)+'</b> · <span class="badge">'+whenTxt+'</span> · <span class="badge">branch:'+( (ef.branch&&ef.branch.length)||0)+'</span>'; row.onclick=function(){ $all('.list .item').forEach(function(x){x.classList.remove('sel');}); row.classList.add('sel'); selEffect=i; }; el.effectsList.appendChild(row); }); if(!(s.effects||[]).length){ el.effectsList.innerHTML='<div class="item">(효과 없음)</div>'; } }
+
+  el.btnEditFromEffect.onclick=function(){ var s=PACK.statuses[cur]; if(cur<0||selEffect<0) return toast('효과를 선택해줘'); var ef=s.effects[selEffect]; loadEffectToBoards(ef); switchTab('blocks'); toast('보드로 불러왔어'); };
+  el.btnDeleteEffect.onclick=function(){ var s=PACK.statuses[cur]; if(cur<0||selEffect<0) return; s.effects.splice(selEffect,1); renderEffectsList(); toast('삭제됨'); };
+  el.btnDupEffect.onclick=function(){ var s=PACK.statuses[cur]; if(cur<0||selEffect<0) return; var copy=JSON.parse(JSON.stringify(s.effects[selEffect])); s.effects.splice(selEffect+1,0,copy); renderEffectsList(); toast('복제됨'); };
+  el.btnExportEffects.onclick=function(){ var s=PACK.statuses[cur]; if(cur<0) return; var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({effects:s.effects},null,2)],{type:'application/json'})); a.download='status-'+s.id+'-effects.json'; a.click(); };
+
+  function loadEffectToBoards(ef){ clearBoards(); // when
+    if(typeof ef.when==='string'){ var b=createBlock({type:'when',when:ef.when}); el.boardWhen.appendChild(b); el.boardWhen.classList.remove('empty'); }
+    else if(ef.when && ef.when.any){ ef.when.any.forEach(function(w){ var b=createBlock({type:'when',when:w}); el.boardWhen.appendChild(b); el.boardWhen.classList.remove('empty'); }); }
+    (ef.branch||[]).forEach(function(br){ var acts=br.do||[]; if(br.if){ br.if.forEach(function(c){ var b=createBlock(c); el.boardIf.appendChild(b); el.boardIf.classList.remove('empty'); }); acts.forEach(function(a){ var b=createBlock(a); el.boardDoIf.appendChild(b); el.boardDoIf.classList.remove('empty'); }); }
+      else if(br.elif){ br.elif.forEach(function(c){ var b=createBlock(c); el.boardElif.appendChild(b); el.boardElif.classList.remove('empty'); }); acts.forEach(function(a){ var b=createBlock(a); el.boardDoElif.appendChild(b); el.boardDoElif.classList.remove('empty'); }); }
+      else if(br.else){ acts.forEach(function(a){ var b=createBlock(a); el.boardDoElse.appendChild(b); el.boardDoElse.classList.remove('empty'); }); } }); if(Array.isArray(ef.if)){ /* global chance etc. */ }
+  }
+
+  // ====== Validate ======
+  el.btnValidate.onclick=function(){ var msgs=[]; if(!(PACK.attributes&&PACK.attributes.length)) msgs.push(['err','속성 JSON 미로드']); for(var si=0;si<PACK.statuses.length;si++){ var s=PACK.statuses[si]; var local=[]; if(!Number.isInteger? (parseInt(s.id,10)===s.id):!Number.isInteger(s.id)) local.push('ID는 정수 권장'); if(!s.name) local.push('이름 없음'); if(s.duration){ if(s.duration.mode==='fixed'&& (s.duration.value<0||s.duration.value>999)) local.push('고정 턴 0~999'); if(s.duration.mode==='random'&& (s.duration.min<1||s.duration.max<s.duration.min)) local.push('랜덤 턴 범위 이상'); } else local.push('지속 없음'); if(!Array.isArray(s.effects)||!s.effects.length) local.push('효과 없음'); (s.effects||[]).forEach(function(ef,idx){ if(!ef.when) local.push('#'+(idx+1)+': when 누락'); if(!Array.isArray(ef.branch)||!ef.branch.length) local.push('#'+(idx+1)+': branch 비어있음'); (ef.branch||[]).forEach(function(br,bi){ if(!Array.isArray(br.do)||!br.do.length) local.push('#'+(idx+1)+'-'+(bi+1)+': do 비어있음'); (br.do||[]).forEach(function(a){ if(a.op==='setAttr' && !PACK.attributes.find(function(x){return String(x.id)===String(a.attrId);} )) local.push('#'+(idx+1)+'-'+(bi+1)+': setAttr attrId='+a.attrId+' 없음'); if(['heal','dot','reduceDamage','reflectDamage','shield','guardNext'].indexOf(a.op)>=0 && !isNum(a.percent)) local.push('#'+(idx+1)+'-'+(bi+1)+': '+a.op+' percent 누락'); if(a.op==='skipTurn' && !isNum(a.chanceP)) local.push('#'+(idx+1)+'-'+(bi+1)+': skipTurn chanceP 누락'); }); }); }); msgs.length? renderMsgs(msgs):renderMsgs([['ok','OK']]); };
+  function isNum(v){ return isFinite(Number(v)); }
+  function renderMsgs(arr){ el.valArea.innerHTML=''; arr.forEach(function(item){ var lvl=item[0], txt=item[1]; var row=document.createElement('div'); row.className='item'; row.innerHTML='<span class="'+lvl+'">'+lvl.toUpperCase()+'</span> · '+txt; el.valArea.appendChild(row); }); }
+
+  // ====== IO ======
+  el.btnExportAll.onclick=function(){ var keep=['attributes','typeChart','skills','mons','items','traits','settings','scenes','project']; var out={}; keep.forEach(function(k){ if(typeof PACK[k]!=="undefined") out[k]=PACK[k]; }); var meta=PACK.meta||{}; meta.updatedAt=new Date().toISOString(); var finalOut={ meta:meta, kind:'statuses', statuses:PACK.statuses }; for(var k in out){ finalOut[k]=out[k]; } var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(finalOut)],{type:'application/json'})); a.download=(PACK.meta&&PACK.meta.title?PACK.meta.title:'monmus')+'-SB-v8.1-statuses.json'; a.click(); };
+  el.btnImportAll.onclick=function(){ el.fileAll.click(); };
+  el.fileAll.onchange=async function(e){ var f=e.target.files && e.target.files[0]; if(!f) return; try{ var txt=await f.text(); var data=JSON.parse(txt); for(var k in data){ if(k==='meta'){ PACK.meta=data.meta; PACK.meta.generator='ToolSB-v8.1'; } else { PACK[k]=data[k]; } } renderStatus(); if(Array.isArray(PACK.attributes)&&PACK.attributes.length){ el.attrState.textContent='불러옴 ✅'; el.attrInfo.textContent='속성 '+PACK.attributes.length+'개'; } }catch(err){ alert('불러오기 실패: JSON 확인'); } e.target.value=''; };
+
+  // ====== Helpers ======
+  function show(elm,yes){ elm.parentElement.style.display = yes? '':'none'; }
+
+})();
+</script>
+</body>
+</html>
