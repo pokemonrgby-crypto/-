@@ -188,7 +188,7 @@
 <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-(function(){
+document.addEventListener('DOMContentLoaded', function(){
   function $(s){return document.querySelector(s);} 
   function $all(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
   var el={
@@ -237,7 +237,7 @@
 
   // ====== Attr Load ======
   el.btnAttr.onclick=function(){ el.fileAttr.click(); };
-  el.fileAttr.onchange=async function(e){ var f=e.target.files && e.target.files[0]; if(!f) return; try{ var txt=await f.text(); var data=JSON.parse(txt); if(!Array.isArray(data.attributes)||data.attributes.length===0) throw 0; PACK.attributes=data.attributes; PACK.typeChart=data.typeChart||[]; el.attrState.textContent='불러옴 ✅'; el.attrInfo.textContent='속성 '+PACK.attributes.length+'개'; }catch(err){ alert('⚠️ 속성 JSON(A단계) 필요'); } e.target.value=''; };
+  el.fileAttr.onchange=async function(e){ var f=e.target.files && e.target.files[0]; if(!f) return; try{ var txt=await f.text(); var data=JSON.parse(txt); if(!Array.isArray(data.attributes)||data.attributes.length===0) throw 0; PACK.attributes=data.attributes; PACK.typeChart=data.typeChart||[]; el.attrState.textContent='불러옴 ✅'; el.attrInfo.textContent='속성 '+PACK.attributes.length+'개'; }catch(err){ alert('⚠️ 속성 JSON(A단계) 필요'); }; e.target.value=''; };
 
   // ====== Status CRUD ======
   function durationObj(){ if(el.durMode.value==='random'){ show(el.durMin,true); show(el.durMax,true); show(el.durFixed,false); return {mode:'random',min:num(el.durMin.value,1),max:Math.max(num(el.durMin.value,1),num(el.durMax.value,1))}; } else { show(el.durMin,false); show(el.durMax,false); show(el.durFixed,true); return {mode:'fixed',value:num(el.durFixed.value,0)}; } }
@@ -408,12 +408,12 @@
   // ====== IO ======
   el.btnExportAll.onclick=function(){ var keep=['attributes','typeChart','skills','mons','items','traits','settings','scenes','project']; var out={}; keep.forEach(function(k){ if(typeof PACK[k]!=="undefined") out[k]=PACK[k]; }); var meta=PACK.meta||{}; meta.updatedAt=new Date().toISOString(); var finalOut={ meta:meta, kind:'statuses', statuses:PACK.statuses }; for(var k in out){ finalOut[k]=out[k]; } var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(finalOut)],{type:'application/json'})); a.download=(PACK.meta&&PACK.meta.title?PACK.meta.title:'monmus')+'-SB-v8.1-statuses.json'; a.click(); };
   el.btnImportAll.onclick=function(){ el.fileAll.click(); };
-  el.fileAll.onchange=async function(e){ var f=e.target.files && e.target.files[0]; if(!f) return; try{ var txt=await f.text(); var data=JSON.parse(txt); for(var k in data){ if(k==='meta'){ PACK.meta=data.meta; PACK.meta.generator='ToolSB-v8.1'; } else { PACK[k]=data[k]; } } renderStatus(); if(Array.isArray(PACK.attributes)&&PACK.attributes.length){ el.attrState.textContent='불러옴 ✅'; el.attrInfo.textContent='속성 '+PACK.attributes.length+'개'; } }catch(err){ alert('불러오기 실패: JSON 확인'); } e.target.value=''; };
+  el.fileAll.onchange=async function(e){ var f=e.target.files && e.target.files[0]; if(!f) return; try{ var txt=await f.text(); var data=JSON.parse(txt); for(var k in data){ if(k==='meta'){ PACK.meta=data.meta; PACK.meta.generator='ToolSB-v8.1'; } else { PACK[k]=data[k]; } } renderStatus(); if(Array.isArray(PACK.attributes)&&PACK.attributes.length){ el.attrState.textContent='불러옴 ✅'; el.attrInfo.textContent='속성 '+PACK.attributes.length+'개'; } }catch(err){ alert('불러오기 실패: JSON 확인'); }; e.target.value=''; };
 
   // ====== Helpers ======
   function show(elm,yes){ elm.parentElement.style.display = yes? '':'none'; }
 
-})();
+});
 </script>
 </body>
 </html>
