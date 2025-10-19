@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Zeta Lite – Gemini Streaming Chat (Single HTML)</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind config for dark class strategy
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          boxShadow: {
+            'soft': '0 8px 30px rgba(0,0,0,0.10)',
+          },
+          keyframes: {
+            pop: { '0%': { transform:'scale(.98)', opacity:0 }, '100%': { transform:'scale(1)', opacity:1 } },
+            slideIn: { '0%': { transform:'translateX(-10px)', opacity:0 }, '100%': { transform:'translateX(0)', opacity:1 } },
+            fadeUp: { '0%': { transform:'translateY(6px)', opacity:0 }, '100%': { transform:'translateY(0)', opacity:1 } },
+          },
+          animation: {
+            pop: 'pop .18s ease-out',
+            slideIn: 'slideIn .18s ease-out',
+            fadeUp: 'fadeUp .25s ease-out',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Icons: Heroicons (inline SVG used) -->
+
+  <!-- Highlight.js (light/dark aware via CSS tweak) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" media="(prefers-color-scheme: light)">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" media="(prefers-color-scheme: dark)">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Marked (final pass rendering after stream ends) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* App-level helpers */
+    :root { color-scheme: light dark; }
+    html, body { height: 100%; }
+    .scroll-smooth { scroll-behavior: smooth; }
+    .chat-scroll { overscroll-behavior: contain; }
+    .msg-actions button { opacity: 0.0; transition: opacity .12s ease; }
+    .msg:hover .msg-actions button { opacity: 1; }
+    .msg .msg-actions button:focus { opacity: 1; }
+    pre { position: relative; }
+    .copy-btn {
+      position: absolute; top: .5rem; right: .5rem;
+      font-size: .75rem; padding: .2rem .5rem; border-radius:.5rem;
+      background: rgba(0,0,0,.6); color: #fff; backdrop-filter: blur(3px);
+    }
+    .copy-btn.light { background: rgba(255,255,255,.9); color: #111; border: 1px solid rgba(0,0,0,.08); }
+    .visually-hidden { position:absolute !important; clip: rect(1px,1px,1px,1px); padding:0 !important; border:0 !important; height:1px !important; width:1px !important; overflow:hidden; white-space:nowrap; }
+    /* Prevent vertical text wrapping in tight spaces */
+    .btn-label { white-space: nowrap; }
+  </style>
+</head>
+
+<body class="h-full bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50 selection:bg-emerald-300 selection:text-black">
+  <!-- App Shell -->
+  <div id="app" class="h-full flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-white/80 dark:bg-neutral-900/70 backdrop-blur border-b border-neutral-200/70 dark:border-neutral-800">
+      <div class="max-w-6xl mx-auto px-3 sm:px-4">
+        <div class="flex items-center gap-2 py-2">
+          <button id="btnOpenSidebar"
+                  class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                  aria-label="사이드바 열기">
+            <!-- Bars Icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="hidden sm:inline btn-label">메뉴</span>
+          </button>
+          <div class="flex-1 flex items-center gap-2">
+            <div class="flex items-center gap-3">
+              <div id="headerAvatar" class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white shadow-soft">
+                <!-- robot placeholder -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3v3M7 22h10a3 3 0 0 0 3-3v-7a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v7a3 3 0 0 0 3 3Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="9.5" cy="12.5" r="1.25" fill="white"/>
+                  <circle cx="14.5" cy="12.5" r="1.25" fill="white"/>
+                </svg>
+              </div>
+              <h1 class="text-lg font-semibold tracking-tight">Zeta Chat <span class="text-neutral-500 dark:text-neutral-400 text-sm">for Gemini</span></h1>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btnExport" class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                    title="내보내기" aria-haspopup="menu" aria-expanded="false">
+              <!-- Download Icon -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v10m0 0 3.5-3.5M12 13 8.5 9.5M4 21h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="hidden sm:inline btn-label">내보내기</span>
+            </button>
+
+            <button id="btnTheme" class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors" aria-label="테마 전환">
+              <!-- Sun/Moon swap -->
+              <svg id="iconSun" class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.5-7.5-1.5 1.5M8 20l-1.5 1.5M20 8l-1.5 1.5M8 3 6.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <svg id="iconMoon" class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="hidden sm:inline btn-label">테마</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sidebar (drawer) -->
+    <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-black/20 opacity-0 pointer-events-none transition-opacity"></div>
+    <aside id="sidebar"
+           class="fixed z-50 top-0 left-0 w-[88%] sm:w-[380px] max-w-[92vw] h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 shadow-xl -translate-x-full transition-transform">
+      <div class="h-full flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
+          <div class="flex items-center gap-3">
+            <div id="sbAvatar" class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3v3M7 22h10a3 3 0 0 0 3-3v-7a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v7a3 3 0 0 0 3 3Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="9.5" cy="12.5" r="1.25" fill="white"/>
+                <circle cx="14.5" cy="12.5" r="1.25" fill="white"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-base font-semibold">설정 & 관리</div>
+              <div class="text-xs text-neutral-500 dark:text-neutral-400">API 키 · 모델 · 캐릭터 · 대화</div>
+            </div>
+          </div>
+          <button id="btnCloseSidebar" class="rounded-xl p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="사이드바 닫기">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <!-- Sections -->
+          <div class="p-4 space-y-6">
+            <!-- API Key -->
+            <section class="space-y-3">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-neutral-500">API 설정</h2>
+              <div class="space-y-2">
+                <label class="text-sm font-medium block">Gemini API 키</label>
+                <div class="flex gap-2">
+                  <input id="inpApiKey" type="password" inputmode="text" autocomplete="off"
+                         class="flex-1 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2"
+                         placeholder="AIza... (브라우저에 안전 저장)" />
+                  <button id="btnSaveKey" class="rounded-xl px-3 py-2 bg-emerald-600 text-white hover:bg-emerald-700 btn-label">
+                    저장 & 검증
+                  </button>
+                </div>
+                <p id="apiKeyStatus" class="text-xs text-neutral-500">키 저장 후 검증합니다.</p>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-sm font-medium block">AI 모델</label>
+                <select id="selModel" class="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2">
+                  <option>gemini-2.0-flash</option>
+                  <option>gemini-2.0-flash-lite</option>
+                  <option>gemini-2.5-flash</option>
+                  <option>gemini-2.5-flash-lite</option>
+                </select>
+              </div>
+            </section>
+
+            <!-- Character -->
+            <section class="space-y-3">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-neutral-500">AI 캐릭터</h2>
+              <div class="space-y-2">
+                <label class="text-sm font-medium block">시스템 프롬프트</label>
+                <textarea id="txtSystemPrompt" rows="4"
+                          class="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2"
+                          placeholder="예) 당신은 친근하고 위트있는 소크라테스 스타일의 멘토입니다."></textarea>
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium block">캐릭터 프로필 이미지</label>
+                <div class="flex items-center gap-3">
+                  <img id="imgPreview" class="w-12 h-12 rounded-2xl object-cover border border-neutral-200 dark:border-neutral-700" alt="캐릭터 미리보기" />
+                  <input id="inpAvatar" type="file" accept="image/*"
+                         class="block w-full text-sm file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-neutral-200 file:text-neutral-900 dark:file:bg-neutral-700 dark:file:text-neutral-100" />
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input id="inpCharName" class="flex-1 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2" placeholder="캐릭터 이름 (예: Mentor)" />
+                <button id="btnSaveCharacter" class="rounded-xl px-3 py-2 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90">프로필 저장</button>
+              </div>
+              <div>
+                <label class="text-sm font-medium block mb-2">캐릭터 목록</label>
+                <ul id="listCharacters" class="space-y-2"></ul>
+                <div class="flex gap-2 mt-2">
+                  <button id="btnNewCharacter" class="rounded-xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700">새 캐릭터</button>
+                  <button id="btnDeleteCharacter" class="rounded-xl px-3 py-2 bg-red-600 text-white hover:bg-red-700">삭제</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Persona -->
+            <section class="space-y-3">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-neutral-500">사용자 페르소나</h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="text-sm font-medium block">이름</label>
+                  <input id="inpPersonaName" class="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2" placeholder="예: Alex" />
+                </div>
+                <div>
+                  <label class="text-sm font-medium block">역할/직무</label>
+                  <input id="inpPersonaRole" class="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2" placeholder="예: Frontend Engineer" />
+                </div>
+              </div>
+              <button id="btnSavePersona" class="rounded-xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 w-full">페르소나 저장</button>
+            </section>
+
+            <!-- Sessions -->
+            <section class="space-y-3">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-neutral-500">대화 목록</h2>
+              <div class="flex gap-2">
+                <button id="btnNewChat" class="rounded-xl px-3 py-2 bg-emerald-600 text-white hover:bg-emerald-700 flex-1">새 대화</button>
+                <button id="btnDeleteChat" class="rounded-xl px-3 py-2 bg-red-600 text-white hover:bg-red-700">삭제</button>
+              </div>
+              <ul id="listSessions" class="space-y-2 mt-2"></ul>
+            </section>
+          </div>
+        </div>
+
+        <div class="p-3 border-t border-neutral-200 dark:border-neutral-800">
+          <p class="text-xs text-neutral-500">
+            모든 데이터는 브라우저 <code>localStorage</code> 에 저장됩니다. API 호출은 키·모델에 따라 비용이 발생할 수 있습니다.
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1">
+      <div class="max-w-6xl mx-auto h-full flex flex-col px-3 sm:px-4">
+        <!-- Info banner -->
+        <div id="bannerNoKey" class="mt-4 hidden rounded-xl border border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-200 p-3">
+          <div class="flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M12 3 2 21h20L12 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <p class="text-sm">채팅을 시작하려면 사이드바에서 Gemini API 키를 저장·검증하세요.</p>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="messages" class="flex-1 chat-scroll overflow-y-auto pt-4 pb-40">
+          <!-- dynamically filled -->
+        </div>
+
+        <!-- Composer -->
+        <div class="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur">
+          <div class="max-w-6xl mx-auto px-3 sm:px-4 py-3">
+            <div class="rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-soft">
+              <div class="flex items-end gap-2 p-2">
+                <textarea id="composer" rows="1" placeholder="메시지를 입력하세요. Shift+Enter 줄바꿈, Ctrl/Cmd+Enter 전송"
+                  class="flex-1 resize-none rounded-xl bg-transparent outline-none px-3 py-2" ></textarea>
+                <div class="flex flex-col sm:flex-row items-stretch gap-2">
+                  <button id="btnSend" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m5 12 3.5 2L20 6 11 19v-5L5 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <span class="btn-label">전송</span>
+                  </button>
+                </div>
+              </div>
+              <div class="px-3 pb-2 text-xs text-neutral-500 flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <span class="hidden xs:inline">서식:</span>
+                  <code>**굵게**</code>
+                  <code>*기울임*</code>
+                  <code>`코드`</code>
+                  <code>```lang ...```</code>
+                  <span class="hidden sm:inline">· 링크, 목록 등은 응답 완료 후 정밀 렌더링됩니다.</span>
+                </div>
+                <div id="status" class="text-neutral-400"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Export menu (popover) -->
+  <div id="exportMenu" class="hidden fixed z-50 right-3 sm:right-4 top-[52px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-2 w-48 animate-pop">
+    <button id="btnExportMD" class="w-full text-left rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">Markdown로 내보내기</button>
+    <button id="btnExportJSON" class="w-full text-left rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">JSON으로 내보내기</button>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="pointer-events-none fixed inset-x-0 bottom-24 flex justify-center">
+    <div id="toastInner" class="hidden max-w-md rounded-xl px-3 py-2 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xl text-sm"></div>
+  </div>
+
+  <script>
+    /**********************
+     * Local Storage Keys *
+     **********************/
+    const LS = {
+      API_KEY: 'zeta_api_key',
+      THEME: 'zeta_theme',
+      MODEL: 'zeta_model',
+      PERSONA: 'zeta_persona',
+      CHARACTERS: 'zeta_characters',
+      CURRENT_CHAR: 'zeta_current_character_id',
+      SESSIONS: 'zeta_sessions',
+      CURRENT_SESSION: 'zeta_current_session_id',
+    };
+
+    /*********************
+     * State & Utilities *
+     *********************/
+    const $ = (sel, parent=document) => parent.querySelector(sel);
+    const $$ = (sel, parent=document) => Array.from(parent.querySelectorAll(sel));
+    const nowIso = () => new Date().toISOString();
+    const uid = (p='id') => p + '_' + Math.random().toString(36).slice(2,10);
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+    function showToast(msg, ms=1800) {
+      const el = $('#toastInner');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      el.classList.add('animate-pop');
+      setTimeout(() => { el.classList.add('hidden'); }, ms);
+    }
+
+    function setStatus(text) { $('#status').textContent = text || ''; }
+
+    function setTheme(mode) {
+      const root = document.documentElement;
+      if (mode === 'dark') root.classList.add('dark');
+      else root.classList.remove('dark');
+      localStorage.setItem(LS.THEME, mode);
+    }
+
+    function toggleTheme() {
+      const cur = localStorage.getItem(LS.THEME) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      setTheme(cur === 'dark' ? 'light' : 'dark');
+    }
+
+    function dataURL(file) {
+      return new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /****************
+     * App Storage  *
+     ****************/
+    const Store = {
+      getKey() { return localStorage.getItem(LS.API_KEY) || ''; },
+      setKey(k) { localStorage.setItem(LS.API_KEY, k || ''); },
+
+      getModel() { return localStorage.getItem(LS.MODEL) || 'gemini-2.0-flash'; },
+      setModel(m) { localStorage.setItem(LS.MODEL, m); },
+
+      getPersona() {
+        try { return JSON.parse(localStorage.getItem(LS.PERSONA) || '{}'); } catch { return {}; }
+      },
+      setPersona(p) { localStorage.setItem(LS.PERSONA, JSON.stringify(p||{})); },
+
+      getCharacters() {
+        try { return JSON.parse(localStorage.getItem(LS.CHARACTERS) || '[]'); } catch { return []; }
+      },
+      setCharacters(arr) { localStorage.setItem(LS.CHARACTERS, JSON.stringify(arr||[])); },
+      getCurrentCharId() { return localStorage.getItem(LS.CURRENT_CHAR) || ''; },
+      setCurrentCharId(id) { localStorage.setItem(LS.CURRENT_CHAR, id || ''); },
+
+      getSessions() {
+        try { return JSON.parse(localStorage.getItem(LS.SESSIONS) || '{}'); } catch { return {}; }
+      },
+      setSessions(obj) { localStorage.setItem(LS.SESSIONS, JSON.stringify(obj||{})); },
+      getCurrentSessionId() { return localStorage.getItem(LS.CURRENT_SESSION) || ''; },
+      setCurrentSessionId(id) { localStorage.setItem(LS.CURRENT_SESSION, id || ''); },
+    };
+
+    /***********************
+     * Default Seed Values *
+     ***********************/
+    function ensureDefaults() {
+      // Theme
+      if (!localStorage.getItem(LS.THEME)) {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } else {
+        setTheme(localStorage.getItem(LS.THEME));
+      }
+
+      // Characters
+      let chars = Store.getCharacters();
+      if (!chars.length) {
+        const id = uid('char');
+        chars = [{
+          id,
+          name: 'Zeta Mentor',
+          systemPrompt: '당신은 친근하고 정확하며, 코드/UX/접근성에 정통한 프론트엔드 멘토입니다. 짧고 명료하지만 필요한 코드는 완성도로 제공합니다.',
+          avatar: '', // dataURL
+          defaultModel: 'gemini-2.0-flash'
+        }];
+        Store.setCharacters(chars);
+        Store.setCurrentCharId(id);
+      }
+
+      // Sessions
+      let sessions = Store.getSessions();
+      if (!Object.keys(sessions).length) {
+        const sId = uid('chat');
+        sessions[sId] = {
+          id: sId,
+          characterId: Store.getCurrentCharId(),
+          title: '새 대화',
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          messages: [],
+        };
+        Store.setSessions(sessions);
+        Store.setCurrentSessionId(sId);
+      }
+
+      // Model
+      if (!localStorage.getItem(LS.MODEL)) {
+        Store.setModel('gemini-2.0-flash');
+      }
+    }
+
+    /**********************
+     * Sidebar Controller *
+     **********************/
+    const Sidebar = (() => {
+      const el = $('#sidebar');
+      const backdrop = $('#sidebarBackdrop');
+      function open() {
+        el.style.transform = 'translateX(0)';
+        backdrop.classList.remove('pointer-events-none');
+        backdrop.classList.remove('opacity-0');
+      }
+      function close() {
+        el.style.transform = 'translateX(-100%)';
+        backdrop.classList.add('pointer-events-none');
+        backdrop.classList.add('opacity-0');
+      }
+      return { open, close };
+    })();
+
+    /***************************************
+     * Progressive Markdown (stream-aware) *
+     * - anticipatory bold/italic/`code`   *
+     * - full code block (```lang) with    *
+     *   syntax highlight when closed.     *
+     ****************************************/
+    class StreamRenderer {
+      constructor(container, themeGetter) {
+        this.container = container;
+        this.themeGetter = themeGetter || (() => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'));
+        this.reset();
+      }
+      reset() {
+        this.state = {
+          bold:false, italic:false, inlineCode:false,
+          codeBlock:false, codeLang:'', codeEl:null, codePre:null,
+          buf:'', // original text buffer (for final pass)
+          currentSpan:null
+        };
+        this.container.innerHTML = '';
+        this._ensureP();
+      }
+      _ensureP() {
+        if (!this.currentP) {
+          this.currentP = document.createElement('p');
+          this.currentP.className = 'whitespace-pre-wrap leading-7';
+          this.container.appendChild(this.currentP);
+        }
+      }
+      _openSpan(cls) {
+        const span = document.createElement('span');
+        span.className = cls;
+        this.currentP.appendChild(span);
+        return span;
+      }
+      _appendText(node, text) {
+        node.appendChild(document.createTextNode(text));
+      }
+      _openCodeBlock(lang) {
+        this.state.codeBlock = true;
+        this.state.codeLang = (lang || '').trim();
+        const pre = document.createElement('pre');
+        pre.className = 'mt-2 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-auto';
+        const code = document.createElement('code');
+        if (this.state.codeLang) code.classList.add(this.state.codeLang);
+        pre.appendChild(code);
+        this.container.appendChild(pre);
+        this.state.codeEl = code;
+        this.state.codePre = pre;
+
+        // Copy button (will style for theme)
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn ' + (this.themeGetter()==='dark' ? '' : 'light');
+        btn.textContent = '복사';
+        btn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(this.state.codeEl.textContent || '');
+            showToast('코드가 복사되었습니다.');
+          } catch { showToast('복사 실패'); }
+        });
+        pre.appendChild(btn);
+      }
+      _closeCodeBlock() {
+        if (!this.state.codeBlock) return;
+        this.state.codeBlock = false;
+        // syntax highlight
+        if (this.state.codeEl) {
+          try { hljs.highlightElement(this.state.codeEl); } catch {}
+        }
+        this.state.codeEl = null;
+        this.state.codePre = null;
+        this.state.codeLang = '';
+        // New paragraph after code block
+        this.currentP = null;
+        this._ensureP();
+      }
+
+      appendChunk(str) {
+        if (!str) return;
+        this.state.buf += str;
+
+        let i=0;
+        const s = this.state;
+
+        while (i < str.length) {
+          // Handle code block mode
+          if (s.codeBlock) {
+            // Look for closing ```
+            const idx = str.indexOf('```', i);
+            if (idx === -1) {
+              // all goes into code
+              const piece = str.slice(i);
+              s.codeEl.textContent += piece;
+              i = str.length;
+              continue;
+            } else {
+              // write up to before closing
+              const piece = str.slice(i, idx);
+              s.codeEl.textContent += piece;
+              i = idx + 3;
+              this._closeCodeBlock();
+              continue;
+            }
+          }
+
+          // Normal (non code-block) parsing
+          // Triple backticks open
+          if (str.startsWith('```', i)) {
+            // grab language if exists up to newline
+            // finish current paragraph line first
+            // move i after ```
+            i += 3;
+            // read language token
+            let lang = '';
+            while (i < str.length) {
+              const ch = str[i];
+              if (ch === '\n') { i++; break; }
+              lang += ch; i++;
+            }
+            this._openCodeBlock(lang);
+            continue;
+          }
+
+          // Inline code
+          if (str[i] === '`' && str[i+1] !== '`') {
+            s.inlineCode = !s.inlineCode;
+            if (s.inlineCode) {
+              s.currentSpan = this._openSpan('px-1 rounded bg-neutral-100 dark:bg-neutral-800 font-mono');
+            } else {
+              s.currentSpan = null;
+            }
+            i++; continue;
+          }
+
+          // Bold/Italic (anticipatory)
+          if (str.startsWith('**', i)) {
+            s.bold = !s.bold;
+            if (s.bold) {
+              s.currentSpan = this._openSpan('font-semibold');
+            } else {
+              s.currentSpan = null;
+            }
+            i += 2; continue;
+          }
+          if (str[i] === '*' && str[i+1] !== '*') {
+            s.italic = !s.italic;
+            if (s.italic) s.currentSpan = this._openSpan('italic');
+            else s.currentSpan = null;
+            i++; continue;
+          }
+
+          // Line breaks (create new paragraphs to prevent huge <p>)
+          if (str[i] === '\n') {
+            this.currentP.appendChild(document.createElement('br'));
+            i++; continue;
+          }
+
+          // Append text normally to span or paragraph
+          const target = s.currentSpan || this.currentP;
+          // write as many characters until next special token
+          let j = i;
+          while (j < str.length) {
+            const ahead2 = str.slice(j, j+2);
+            const ahead3 = str.slice(j, j+3);
+            if (s.codeBlock) break;
+            if (ahead3 === '```' || ahead2 === '**' || str[j] === '*' || str[j] === '`' || str[j] === '\n') break;
+            j++;
+          }
+          const piece = str.slice(i, j);
+          this._appendText(target, piece);
+          i = j;
+        }
+      }
+
+      finalizeInto(containerForFinal=null) {
+        // On finish, run a full Marked render (better lists/links/tables)
+        // But preserve code-copy buttons afterwards.
+        const html = marked.parse(this.state.buf, { breaks: true });
+        const target = containerForFinal || this.container;
+        target.innerHTML = html;
+        // add copy buttons to code blocks
+        $$('pre > code', target).forEach(code => {
+          const pre = code.parentElement;
+          const btn = document.createElement('button');
+          btn.className = 'copy-btn ' + (this.themeGetter()==='dark' ? '' : 'light');
+          btn.textContent = '복사';
+          btn.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(code.textContent || ''); showToast('코드가 복사되었습니다.'); }
+            catch { showToast('복사 실패'); }
+          });
+          pre.appendChild(btn);
+          try { hljs.highlightElement(code); } catch {}
+        });
+      }
+
+      getRaw() { return this.state.buf; }
+    }
+
+    /*********************
+     * UI Render Helpers *
+     *********************/
+    function avatarElement(dataUrl) {
+      const el = document.createElement('div');
+      el.className = 'w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-white flex items-center justify-center shrink-0';
+      if (dataUrl) {
+        el.style.backgroundImage = `url(${dataUrl})`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        el.textContent = '';
+      } else {
+        el.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3v3M7 22h10a3 3 0 0 0 3-3v-7a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v7a3 3 0 0 0 3 3Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="9.5" cy="12.5" r="1.25" fill="white"/>
+            <circle cx="14.5" cy="12.5" r="1.25" fill="white"/>
+          </svg>`;
+      }
+      return el;
+    }
+
+    function msgActions(message, onCopy, onEdit, onDelete) {
+      const a = document.createElement('div');
+      a.className = 'msg-actions absolute -top-2 ' + (message.role==='user' ? 'right-2' : 'left-2') + ' flex gap-1';
+      const mkBtn = (title, svg) => {
+        const b = document.createElement('button');
+        b.className = 'rounded-lg px-2 py-1 text-xs bg-neutral-900/70 text-white dark:bg-white/80 dark:text-neutral-900 hover:opacity-90';
+        b.title = title;
+        b.innerHTML = svg;
+        return b;
+      };
+      const copyB = mkBtn('복사', '복사');
+      copyB.textContent = '복사';
+      copyB.addEventListener('click', onCopy);
+
+      const editB = mkBtn('수정', '수정');
+      editB.textContent = '수정';
+      if (onEdit) editB.addEventListener('click', onEdit); else editB.disabled = true;
+
+      const delB = mkBtn('삭제', '삭제');
+      delB.textContent = '삭제';
+      delB.addEventListener('click', onDelete);
+
+      a.append(copyB, editB, delB);
+      return a;
+    }
+
+    function messageBubble(message) {
+      // message: { id, role:'user'|'model', content, ts }
+      const wrap = document.createElement('div');
+      wrap.className = 'msg group relative flex items-start gap-3 my-2 animate-fadeUp';
+      const isUser = message.role === 'user';
+
+      if (isUser) wrap.classList.add('justify-end');
+
+      const avatar = avatarElement(isUser ? '' : currentCharacter().avatar);
+      if (!isUser) wrap.appendChild(avatar);
+
+      const bubble = document.createElement('div');
+      bubble.className = (isUser
+          ? 'max-w-[90%] sm:max-w-[75%] rounded-2xl rounded-br-sm bg-emerald-600 text-white px-4 py-3 shadow-soft'
+          : 'max-w-[90%] sm:max-w-[75%] rounded-2xl rounded-bl-sm bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-4 py-3 shadow-soft');
+
+      // content container
+      const content = document.createElement('div');
+      content.className = 'prose prose-sm dark:prose-invert max-w-none';
+      bubble.appendChild(content);
+
+      // actions
+      const actions = msgActions(
+        message,
+        async () => {
+          await navigator.clipboard.writeText(message.content || '');
+          showToast('메시지가 복사되었습니다.');
+        },
+        isUser ? () => {
+          // put to composer and remove this (and last model reply if pairs)
+          $('#composer').value = message.content || '';
+          deleteMessageAndFollowing(message.id);
+        } : null,
+        () => { deleteSingleMessage(message.id); }
+      );
+      wrap.appendChild(actions);
+
+      if (isUser) wrap.appendChild(bubble);
+      else wrap.appendChild(bubble);
+
+      return { wrap, content };
+    }
+
+    /***********************
+     * Sessions Management *
+     ***********************/
+    function sessionsListSorted() {
+      const sessions = Store.getSessions();
+      return Object.values(sessions).sort((a,b)=> new Date(b.updatedAt) - new Date(a.updatedAt));
+    }
+
+    function currentSession() {
+      const sId = Store.getCurrentSessionId();
+      const sessions = Store.getSessions();
+      return sessions[sId];
+    }
+
+    function saveSession(sess) {
+      const all = Store.getSessions();
+      all[sess.id] = sess;
+      Store.setSessions(all);
+      renderSessionsList();
+    }
+
+    function newSession(title='새 대화') {
+      const sId = uid('chat');
+      const sess = {
+        id: sId,
+        characterId: Store.getCurrentCharId(),
+        title,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        messages: []
+      };
+      const all = Store.getSessions();
+      all[sId] = sess;
+      Store.setSessions(all);
+      Store.setCurrentSessionId(sId);
+      renderSessionsList();
+      renderChat();
+      showToast('새 대화를 시작합니다.');
+    }
+
+    function deleteCurrentSession() {
+      const sId = Store.getCurrentSessionId();
+      const all = Store.getSessions();
+      if (!all[sId]) return;
+      delete all[sId];
+      Store.setSessions(all);
+      const left = Object.keys(all);
+      if (left.length) {
+        Store.setCurrentSessionId(left[0]);
+      } else {
+        newSession();
+      }
+      renderSessionsList();
+      renderChat();
+      showToast('대화가 삭제되었습니다.');
+    }
+
+    function deleteSingleMessage(msgId) {
+      const sess = currentSession();
+      const idx = sess.messages.findIndex(m => m.id === msgId);
+      if (idx >= 0) {
+        sess.messages.splice(idx,1);
+        sess.updatedAt = nowIso();
+        saveSession(sess);
+        renderChat();
+      }
+    }
+
+    function deleteMessageAndFollowing(msgId) {
+      const sess = currentSession();
+      const idx = sess.messages.findIndex(m => m.id === msgId);
+      if (idx >= 0) {
+        sess.messages = sess.messages.slice(0, idx);
+        sess.updatedAt = nowIso();
+        saveSession(sess);
+        renderChat();
+      }
+    }
+
+    /***********************
+     * Character Management*
+     ***********************/
+    function currentCharacter() {
+      const id = Store.getCurrentCharId();
+      const list = Store.getCharacters();
+      return list.find(c => c.id === id) || list[0];
+    }
+
+    function setHeaderAvatars() {
+      const c = currentCharacter();
+      // header avatar
+      const h = $('#headerAvatar');
+      const sb = $('#sbAvatar');
+      [h, sb].forEach(el => {
+        if (c.avatar) {
+          el.style.backgroundImage = `url(${c.avatar})`;
+          el.style.backgroundSize = 'cover';
+          el.style.backgroundPosition = 'center';
+          el.innerHTML = '';
+        } else {
+          el.style.backgroundImage = '';
+          el.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3v3M7 22h10a3 3 0 0 0 3-3v-7a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v7a3 3 0 0 0 3 3Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="9.5" cy="12.5" r="1.25" fill="white"/>
+              <circle cx="14.5" cy="12.5" r="1.25" fill="white"/>
+            </svg>`;
+        }
+      });
+    }
+
+    function renderCharactersList() {
+      const ul = $('#listCharacters');
+      ul.innerHTML = '';
+      Store.getCharacters().forEach(ch => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-3 p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer';
+        const av = avatarElement(ch.avatar);
+        av.classList.remove('w-8','h-8'); av.classList.add('w-9','h-9');
+        const name = document.createElement('div');
+        name.textContent = ch.name;
+        name.className = 'font-medium';
+        li.append(av, name);
+        if (ch.id === Store.getCurrentCharId()) {
+          li.classList.add('ring-2','ring-emerald-400');
+        }
+        li.addEventListener('click', () => {
+          Store.setCurrentCharId(ch.id);
+          $('#txtSystemPrompt').value = ch.systemPrompt || '';
+          $('#inpCharName').value = ch.name || '';
+          $('#imgPreview').src = ch.avatar || '';
+          $('#selModel').value = ch.defaultModel || Store.getModel();
+          setHeaderAvatars();
+          renderSessionsList(); // show only sessions for this char? We'll keep all, but title shows char
+          showToast(`"${ch.name}" 캐릭터 선택됨`);
+        });
+        ul.appendChild(li);
+      });
+    }
+
+    function saveCharacterFromForm() {
+      const name = $('#inpCharName').value.trim() || 'My Character';
+      const systemPrompt = $('#txtSystemPrompt').value.trim();
+      const avatar = $('#imgPreview').getAttribute('src') || '';
+      const model = $('#selModel').value;
+
+      let chars = Store.getCharacters();
+      let curId = Store.getCurrentCharId();
+      let cur = chars.find(c => c.id === curId);
+      if (!cur) {
+        curId = uid('char');
+        cur = { id: curId };
+        chars.push(cur);
+      }
+      Object.assign(cur, { name, systemPrompt, avatar, defaultModel: model });
+      Store.setCharacters(chars);
+      Store.setCurrentCharId(curId);
+      setHeaderAvatars();
+      renderCharactersList();
+      showToast('캐릭터가 저장되었습니다.');
+    }
+
+    function newCharacter() {
+      const id = uid('char');
+      const chars = Store.getCharacters();
+      chars.push({
+        id, name:'새 캐릭터', systemPrompt:'', avatar:'', defaultModel: Store.getModel()
+      });
+      Store.setCharacters(chars);
+      Store.setCurrentCharId(id);
+      renderCharactersList();
+      $('#inpCharName').value = '새 캐릭터';
+      $('#txtSystemPrompt').value = '';
+      $('#imgPreview').src = '';
+      showToast('새 캐릭터가 추가되었습니다.');
+    }
+
+    function deleteCharacter() {
+      const id = Store.getCurrentCharId();
+      let chars = Store.getCharacters();
+      if (chars.length <= 1) return showToast('마지막 캐릭터는 삭제할 수 없습니다.');
+      chars = chars.filter(c => c.id !== id);
+      Store.setCharacters(chars);
+      Store.setCurrentCharId(chars[0].id);
+      renderCharactersList();
+      setHeaderAvatars();
+      showToast('캐릭터가 삭제되었습니다.');
+    }
+
+    /*******************
+     * Chat Rendering  *
+     *******************/
+    function renderSessionsList() {
+      const ul = $('#listSessions');
+      ul.innerHTML = '';
+      const sessions = sessionsListSorted();
+      sessions.forEach(sess => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-2 p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer';
+        const title = document.createElement('div');
+        title.className = 'truncate';
+        const char = Store.getCharacters().find(c => c.id === sess.characterId);
+        title.textContent = (sess.title || '대화') + (char ? ` · ${char.name}` : '');
+        const time = document.createElement('div');
+        time.className = 'text-xs text-neutral-500';
+        time.textContent = new Date(sess.updatedAt).toLocaleString();
+        li.append(title, time);
+        if (sess.id === Store.getCurrentSessionId()) {
+          li.classList.add('ring-2','ring-emerald-400');
+        }
+        li.addEventListener('click', () => {
+          Store.setCurrentSessionId(sess.id);
+          renderSessionsList();
+          renderChat();
+        });
+        ul.appendChild(li);
+      });
+    }
+
+    function renderChat() {
+      const area = $('#messages');
+      area.innerHTML = '';
+      const sess = currentSession();
+      if (!sess) return;
+
+      // Banner if no key
+      const hasKey = !!Store.getKey();
+      $('#bannerNoKey').classList.toggle('hidden', hasKey);
+
+      sess.messages.forEach(msg => {
+        const { wrap, content } = messageBubble(msg);
+        area.appendChild(wrap);
+        // Render static messages (already finished)
+        const html = marked.parse(msg.content || '', { breaks: true });
+        content.innerHTML = html;
+        $$('pre > code', content).forEach(code => { try { hljs.highlightElement(code); } catch {} });
+        addCopyButtonsScoped(content);
+      });
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function addCopyButtonsScoped(scope) {
+      $$('pre', scope).forEach(pre => {
+        if (pre.querySelector('.copy-btn')) return;
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn ' + (document.documentElement.classList.contains('dark') ? '' : 'light');
+        btn.textContent = '복사';
+        btn.addEventListener('click', async () => {
+          try {
+            const code = pre.querySelector('code');
+            await navigator.clipboard.writeText(code?.textContent || '');
+            showToast('코드가 복사되었습니다.');
+          } catch { showToast('복사 실패'); }
+        });
+        pre.appendChild(btn);
+      });
+    }
+
+    /***********************
+     * Gemini API (SSE)    *
+     ***********************/
+    async function validateApiKey() {
+      const key = Store.getKey();
+      const status = $('#apiKeyStatus');
+      if (!key) { status.textContent = 'API 키가 없습니다.'; return false; }
+      status.textContent = '키 검증 중...';
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('검증 실패');
+        status.textContent = '검증 완료. 채팅을 사용할 수 있습니다.';
+        return true;
+      } catch (e) {
+        status.textContent = '키 검증 실패. 키를 확인하세요.';
+        return false;
+      }
+    }
+
+    function buildSystemInstruction() {
+      const ch = currentCharacter();
+      const persona = Store.getPersona();
+      const personaLine = (persona?.name || persona?.role) ? `사용자 정보: 이름=${persona.name||'사용자'}, 역할=${persona.role||'N/A'}` : '';
+      return [ch?.systemPrompt || '', personaLine].filter(Boolean).join('\n');
+    }
+
+    // Stream call to Gemini API
+    async function streamGemini({ model, contents, onDelta, onDone, onError }) {
+      const key = Store.getKey();
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`;
+      const body = {
+        system_instruction: { parts: [{ text: buildSystemInstruction() }]},
+        contents,
+        generationConfig: { temperature: 0.7 }
+      };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok || !res.body) throw new Error('API 오류');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // parse SSE lines
+        let idx;
+        while ((idx = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, idx).trim();
+          buffer = buffer.slice(idx + 1);
+          if (!line) continue;
+          if (line.startsWith('data:')) {
+            const data = line.slice(5).trim();
+            if (data === '[DONE]') { onDone?.(); break; }
+            try {
+              const obj = JSON.parse(data);
+              // Extract text piece (support both content.parts and delta)
+              let piece = '';
+              if (obj?.candidates?.length) {
+                const c = obj.candidates[0];
+                if (c?.content?.parts?.length) {
+                  piece += c.content.parts.map(p => p.text || '').join('');
+                }
+                if (c?.delta?.parts?.length) {
+                  piece += c.delta.parts.map(p => p.text || '').join('');
+                }
+                if (c?.delta?.text) piece += c.delta.text;
+              }
+              if (piece) onDelta?.(piece);
+            } catch (e) { /* ignore decoding errors */ }
+          }
+        }
+      }
+      onDone?.();
+    }
+
+    /********************
+     * Send & Streaming *
+     ********************/
+    async function sendMessage() {
+      const key = Store.getKey();
+      if (!key) { Sidebar.open(); showToast('먼저 API 키를 저장하세요.'); return; }
+
+      const text = $('#composer').value.trim();
+      if (!text) return;
+
+      const sess = currentSession();
+      const userMsg = { id: uid('m'), role: 'user', content: text, ts: nowIso() };
+      sess.messages.push(userMsg);
+      sess.updatedAt = nowIso();
+      saveSession(sess);
+      $('#composer').value = '';
+      renderChat();
+
+      // Prepare assistant message placeholder with streaming renderer
+      const area = $('#messages');
+      const aiMsg = { id: uid('m'), role: 'model', content: '', ts: nowIso() };
+      sess.messages.push(aiMsg);
+      sess.updatedAt = nowIso();
+      saveSession(sess);
+
+      const { wrap, content } = messageBubble(aiMsg);
+      area.appendChild(wrap);
+      area.scrollTop = area.scrollHeight;
+
+      const renderer = new StreamRenderer(content, () => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'));
+
+      // Build contents from history
+      const contents = sess.messages.map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content || '' }]
+      }));
+
+      setStatus('응답 생성 중...');
+      $('#btnSend').disabled = true;
+
+      try {
+        await streamGemini({
+          model: $('#selModel').value || Store.getModel(),
+          contents,
+          onDelta: (piece) => {
+            renderer.appendChunk(piece);
+            area.scrollTop = area.scrollHeight;
+          },
+          onDone: () => {
+            renderer.finalizeInto(content);
+            aiMsg.content = renderer.getRaw();
+            const sess2 = currentSession();
+            const idx = sess2.messages.findIndex(m => m.id === aiMsg.id);
+            if (idx >= 0) { sess2.messages[idx].content = aiMsg.content; sess2.updatedAt = nowIso(); saveSession(sess2); }
+            setStatus('');
+            $('#btnSend').disabled = false;
+            area.scrollTop = area.scrollHeight;
+          },
+          onError: (err) => {
+            setStatus('');
+            $('#btnSend').disabled = false;
+            showToast('API 오류: ' + (err?.message || '알 수 없음'));
+          }
+        });
+      } catch (e) {
+        setStatus('');
+        $('#btnSend').disabled = false;
+        showToast('요청 실패: ' + (e?.message || '네트워크'));
+      }
+    }
+
+    /****************
+     * Exporting    *
+     ****************/
+    function currentConversationAsMD() {
+      const sess = currentSession();
+      const char = Store.getCharacters().find(c => c.id === sess.characterId);
+      const header = `# 대화: ${sess.title}\n- 캐릭터: ${char?.name || ''}\n- 시작: ${new Date(sess.createdAt).toLocaleString()}\n- 업데이트: ${new Date(sess.updatedAt).toLocaleString()}\n\n---\n`;
+      const body = sess.messages.map(m => `### ${m.role === 'user' ? '사용자' : 'AI'}\n\n${m.content}\n`).join('\n');
+      return header + body;
+    }
+
+    function currentConversationAsJSON() {
+      return JSON.stringify(currentSession(), null, 2);
+    }
+
+    function downloadFile(name, text, type='text/plain') {
+      const blob = new Blob([text], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+    }
+
+    /****************
+     * Init & Bind  *
+     ****************/
+    function autoResizeTextarea() {
+      const ta = $('#composer');
+      ta.style.height = 'auto';
+      ta.style.height = clamp(ta.scrollHeight, 40, 200) + 'px';
+    }
+
+    function bindUI() {
+      // Sidebar
+      $('#btnOpenSidebar').addEventListener('click', Sidebar.open);
+      $('#btnCloseSidebar').addEventListener('click', Sidebar.close);
+      $('#sidebarBackdrop').addEventListener('click', Sidebar.close);
+
+      // Theme
+      $('#btnTheme').addEventListener('click', () => { toggleTheme(); addCopyButtonsScoped(document); });
+
+      // Export menu
+      const exp = $('#btnExport');
+      const menu = $('#exportMenu');
+      exp.addEventListener('click', () => {
+        const open = !menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', open);
+        exp.setAttribute('aria-expanded', String(!open));
+      });
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target) && e.target !== exp) {
+          menu.classList.add('hidden');
+          exp.setAttribute('aria-expanded', 'false');
+        }
+      });
+      $('#btnExportMD').addEventListener('click', () => {
+        downloadFile('chat.md', currentConversationAsMD(), 'text/markdown');
+        menu.classList.add('hidden');
+      });
+      $('#btnExportJSON').addEventListener('click', () => {
+        downloadFile('chat.json', currentConversationAsJSON(), 'application/json');
+        menu.classList.add('hidden');
+      });
+
+      // API key save/validate
+      $('#btnSaveKey').addEventListener('click', async () => {
+        const key = $('#inpApiKey').value.trim();
+        if (!key) { showToast('API 키를 입력하세요.'); return; }
+        Store.setKey(key);
+        const ok = await validateApiKey();
+        if (ok) { $('#bannerNoKey').classList.add('hidden'); }
+      });
+
+      // Model
+      $('#selModel').value = Store.getModel();
+      $('#selModel').addEventListener('change', (e) => {
+        Store.setModel(e.target.value);
+        const ch = currentCharacter();
+        ch.defaultModel = e.target.value;
+        const all = Store.getCharacters();
+        const idx = all.findIndex(x => x.id === ch.id);
+        if (idx>=0) { all[idx]=ch; Store.setCharacters(all); }
+      });
+
+      // Character form
+      $('#btnSaveCharacter').addEventListener('click', saveCharacterFromForm);
+      $('#btnNewCharacter').addEventListener('click', newCharacter);
+      $('#btnDeleteCharacter').addEventListener('click', deleteCharacter);
+      $('#inpAvatar').addEventListener('change', async (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        const url = await dataURL(f);
+        $('#imgPreview').src = url;
+      });
+
+      // Persona
+      $('#btnSavePersona').addEventListener('click', () => {
+        const name = $('#inpPersonaName').value.trim();
+        const role = $('#inpPersonaRole').value.trim();
+        Store.setPersona({ name, role });
+        showToast('페르소나가 저장되었습니다.');
+      });
+
+      // Sessions
+      $('#btnNewChat').addEventListener('click', () => newSession('새 대화'));
+      $('#btnDeleteChat').addEventListener('click', deleteCurrentSession);
+
+      // Composer
+      $('#composer').addEventListener('input', autoResizeTextarea);
+      $('#composer').addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+        else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+      });
+      $('#btnSend').addEventListener('click', sendMessage);
+
+      // Shortcuts
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement !== $('#composer')) {
+          e.preventDefault(); $('#composer').focus();
+        }
+        if (e.key === 'Escape') Sidebar.close();
+      });
+    }
+
+    /***********
+     * Startup *
+     ***********/
+    function hydrateFormsFromState() {
+      // API key masked (not auto-filled in input for security UX)
+      // Model already set
+      // Character form
+      const ch = currentCharacter();
+      $('#inpCharName').value = ch?.name || '';
+      $('#txtSystemPrompt').value = ch?.systemPrompt || '';
+      $('#imgPreview').src = ch?.avatar || '';
+      $('#selModel').value = ch?.defaultModel || Store.getModel();
+
+      const p = Store.getPersona();
+      $('#inpPersonaName').value = p?.name || '';
+      $('#inpPersonaRole').value = p?.role || '';
+    }
+
+    async function init() {
+      ensureDefaults();
+      setHeaderAvatars();
+      hydrateFormsFromState();
+      bindUI();
+      renderCharactersList();
+      renderSessionsList();
+      renderChat();
+      if (Store.getKey()) { validateApiKey(); }
+    }
+
+    // global helpers (debug)
+    window.__ZETA__ = { Store, newSession };
+
+    init();
+  </script>
+</body>
+</html>
