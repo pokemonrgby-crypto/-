@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full antialiased">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Zeta · 고급 AI 채팅 (Single HTML)</title>
+
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind config: elegant defaults + dark
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:'#eef6ff',100:'#d9ebff',200:'#b9d9ff',300:'#91c3ff',400:'#63a5ff',
+              500:'#3f87ff',600:'#2e6ff2',700:'#2558c9',800:'#204aa3',900:'#1f478f',950:'#152e5e'
+            }
+          },
+          boxShadow: {
+            soft: '0 8px 24px rgba(0,0,0,0.12)',
+            inset: 'inset 0 1px 0 rgba(255,255,255,0.06)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Marked (Markdown parser) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- DOMPurify (XSS-safe sanitize) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+  <!-- Highlight.js (syntax highlight) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js"></script>
+
+  <style>
+    /* Smooth animations + focus rings */
+    .tap { @apply active:scale-[0.98] transition transform; }
+    .btn { @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl font-medium shadow-soft transition ring-1 ring-black/5 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 whitespace-nowrap; }
+    .btn-ghost { @apply bg-white/50 hover:bg-white/70 text-gray-900 dark:bg-white/5 dark:hover:bg-white/10 dark:text-gray-100; }
+    .btn-brand { @apply bg-brand-600 text-white hover:bg-brand-500; }
+    .btn-muted { @apply bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-white/5 dark:hover:bg-white/10 dark:text-gray-200; }
+    .chip { @apply text-xs px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10; }
+    .glass { @apply bg-white/70 dark:bg-white/[0.06] backdrop-blur supports-[backdrop-filter]:backdrop-blur; }
+    .scrollbar::-webkit-scrollbar{width:10px;height:10px}
+    .scrollbar::-webkit-scrollbar-thumb{background:#0003;border-radius:6px}
+    .scrollbar::-webkit-scrollbar-track{background:transparent}
+    .fade-in{animation:fadein .3s ease-out both}
+    @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    pre { position: relative; }
+    .code-copy {
+      position:absolute; top:8px; right:8px;
+      @apply btn btn-muted !px-2 !py-1 !shadow-none ring-0;
+      font-size:.75rem;
+    }
+    /* Mobile-safe labels & buttons: never vertical text wrap into single letters */
+    .no-vertical-wrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+</head>
+
+<body class="h-full bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 dark:from-[#0b1020] dark:to-[#0b0f1a] dark:text-slate-100">
+  <!-- App Container -->
+  <div id="app" class="min-h-full grid grid-rows-[auto_1fr_auto]">
+
+    <!-- HEADER -->
+    <header class="glass sticky top-0 z-40 border-b border-black/5 dark:border-white/5">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-2">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <button id="btnOpenSidebar" class="btn btn-muted tap md:hidden" aria-label="사이드바 열기">
+              <!-- menu icon -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="shrink-0">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl grid place-items-center bg-brand-600 text-white shadow-soft">
+                <span class="font-bold">Z</span>
+              </div>
+              <div class="min-w-0">
+                <div class="font-semibold truncate">Zeta · 고급 AI 채팅</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 no-vertical-wrap">
+                  클라이언트 전용 · Gemini API · Markdown · 스트리밍
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btnNewChat" class="btn btn-ghost tap hidden sm:inline-flex" title="새 대화" aria-label="새 대화">
+              <!-- sparkles -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3l2 4 4 2-4 2-2 4-2-4-4-2 4-2 2-4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+              새 대화
+            </button>
+
+            <button id="btnExport" class="btn btn-ghost tap hidden sm:inline-flex" title="내보내기" aria-label="대화 내보내기">
+              <!-- download -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              내보내기
+            </button>
+
+            <button id="btnTheme" class="btn btn-muted tap" aria-label="테마 전환">
+              <!-- sun/moon -->
+              <span class="inline-block dark:hidden" title="다크 모드">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v2m0 12v2m8-8h-2M6 12H4m12.95 5.657l-1.414-1.414M7.05 7.757 5.636 6.343m10.607 0 1.414 1.414M7.05 16.243l-1.414 1.414" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </span>
+              <span class="hidden dark:inline-block" title="라이트 모드">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </span>
+              <span class="sr-only">테마 전환</span>
+            </button>
+
+            <button id="btnOpenSidebar2" class="btn btn-brand tap hidden md:inline-flex" aria-label="설정 열기">
+              <!-- sliders -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h12M4 12h16M4 18h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              설정/캐릭터
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="relative">
+      <div class="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-[320px_1fr]">
+
+        <!-- SIDEBAR (drawer) -->
+        <aside id="sidebar"
+          class="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[360px] translate-x-[-100%] md:static md:translate-x-0 md:w-auto transition-transform duration-300 ease-out">
+          <div class="h-full overflow-y-auto scrollbar glass border-r border-black/5 dark:border-white/5 md:rounded-none rounded-tr-2xl rounded-br-2xl">
+            <div class="p-4 md:p-6 space-y-6">
+
+              <!-- API & Model -->
+              <section class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-sm font-semibold no-vertical-wrap">API & 모델</h2>
+                  <span id="apiStatus" class="chip">키 미설정</span>
+                </div>
+                <label class="block text-xs text-slate-500 no-vertical-wrap mb-1">Gemini API 키</label>
+                <div class="flex gap-2">
+                  <input id="apiKey" type="password" placeholder="AIza... 또는 프로젝트 키"
+                         class="w-full px-3 py-2 rounded-xl bg-white ring-1 ring-black/10 focus:ring-2 focus:ring-brand-500 outline-none dark:bg-white/5 dark:ring-white/10" />
+                  <button id="btnSaveKey" class="btn btn-brand tap shrink-0">저장</button>
+                </div>
+                <div class="flex gap-2">
+                  <select id="modelSelect"
+                          class="w-full px-3 py-2 rounded-xl bg-white ring-1 ring-black/10 focus:ring-2 focus:ring-brand-500 outline-none dark:bg-white/5 dark:ring-white/10">
+                    <option>gemini-2.0-flash</option>
+                    <option>gemini-2.0-flash-lite</option>
+                    <option selected>gemini-2.5-flash</option>
+                    <option>gemini-2.5-flash-lite</option>
+                  </select>
+                  <button id="btnCheckKey" class="btn btn-muted tap shrink-0">키 확인</button>
+                </div>
+                <p class="text-[12px] text-slate-500 leading-relaxed">
+                  키는 <span class="font-medium">브라우저 localStorage</span>에만 저장됩니다.
+                </p>
+              </section>
+
+              <hr class="border-black/5 dark:border-white/10"/>
+
+              <!-- Character settings -->
+              <section class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-sm font-semibold no-vertical-wrap">AI 캐릭터</h2>
+                  <button id="btnNewCharacter" class="btn btn-muted tap">새 캐릭터</button>
+                </div>
+
+                <div id="characterList" class="grid gap-2"></div>
+
+                <div class="p-3 rounded-2xl bg-black/5 dark:bg-white/5 space-y-3">
+                  <div class="flex items-center gap-3">
+                    <div class="relative">
+                      <img id="charAvatarPreview" class="w-12 h-12 rounded-xl object-cover ring-1 ring-black/10 dark:ring-white/10" alt="캐릭터 이미지">
+                      <button id="btnUploadAvatar" class="btn btn-muted !px-2 !py-1 absolute -bottom-2 -right-2" title="이미지 업로드">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 5v14m7-7H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                      <input id="avatarFile" type="file" accept="image/*" class="hidden" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <input id="charName" class="w-full px-3 py-2 rounded-xl bg-white ring-1 ring-black/10 focus:ring-2 focus:ring-brand-500 outline-none dark:bg-white/5 dark:ring-white/10"
+                             placeholder="캐릭터 이름 (예: Nova, BabyChat 등)"/>
+                      <div class="text-[12px] text-slate-500 no-vertical-wrap mt-1">프로필을 저장하면 목록에 추가됩니다.</div>
+                    </div>
+                  </div>
+
+                  <label class="block text-xs text-slate-500 no-vertical-wrap">시스템 프롬프트</label>
+                  <textarea id="systemPrompt" rows="5" class="w-full px-3 py-2 rounded-xl bg-white ring-1 ring-black/10 focus:ring-2 focus:ring-brand-500 outline-none dark:bg-white/5 dark:ring-white/10"
+                            placeholder="AI의 역할/말투/제약 등을 서술하세요."></textarea>
+
+                  <div class="flex items-center gap-2">
+                    <button id="btnSaveCharacter" class="btn btn-brand tap flex-1">캐릭터 저장</button>
+                    <button id="btnUseCharacter" class="btn btn-muted tap flex-1">이 캐릭터로 대화</button>
+                  </div>
+                </div>
+              </section>
+
+              <hr class="border-black/5 dark:border-white/10"/>
+
+              <!-- User persona -->
+              <section class="space-y-2">
+                <h2 class="text-sm font-semibold no-vertical-wrap">사용자 페르소나</h2>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs text-slate-500 no-vertical-wrap mb-1">호칭/이름</label>
+                    <input id="userName" class="w-full px-3 py-2 rounded-xl bg-white ring-1 ring-black/10 focus:ring-2 focus:ring-brand-500 outline-none dark:bg-white/5 dark:ring-white/10" placeholder="예: Alex" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 no-vertical-wrap mb-1">역할</label>
+                    <input id="userRole" class="w-full px-3 py-2 rounded-xl bg-white ring-1 ring-black/10 focus:ring-2 focus:ring-brand-500 outline-none dark:bg-white/5 dark:ring-white/10" placeholder="예: PM, Researcher" />
+                  </div>
+                </div>
+                <button id="btnSaveUser" class="btn btn-muted tap w-full">사용자 정보 저장</button>
+              </section>
+
+              <hr class="border-black/5 dark:border-white/10"/>
+
+              <!-- Sessions -->
+              <section class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-sm font-semibold no-vertical-wrap">대화 목록</h2>
+                  <button id="btnClearAll" class="btn btn-muted tap">전체 삭제</button>
+                </div>
+                <div id="sessionList" class="grid gap-2"></div>
+              </section>
+
+              <hr class="border-black/5 dark:border-white/10"/>
+
+              <!-- Export -->
+              <section class="space-y-2">
+                <h2 class="text-sm font-semibold no-vertical-wrap">대화 내보내기</h2>
+                <div class="grid grid-cols-2 gap-2">
+                  <button id="btnExportMD" class="btn btn-ghost tap">Markdown .md</button>
+                  <button id="btnExportJSON" class="btn btn-ghost tap">JSON .json</button>
+                </div>
+                <p class="text-[12px] text-slate-500">현재 세션 기준으로 내보냅니다.</p>
+              </section>
+
+              <div class="h-8"></div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Chat Panel -->
+        <section class="min-h-[calc(100svh-4rem)] md:min-h-[calc(100svh-4rem)] relative">
+          <div class="h-full flex flex-col">
+
+            <!-- Empty state / Top info -->
+            <div id="intro" class="p-6 md:p-10 border-b border-black/5 dark:border-white/5 glass">
+              <div class="flex items-center gap-3">
+                <div id="activeAvatar" class="w-12 h-12 rounded-2xl bg-brand-600 text-white grid place-items-center shadow-soft">
+                  <!-- default robot icon -->
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                    <rect x="4" y="7" width="16" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                    <circle cx="9" cy="13" r="2" fill="currentColor"/>
+                    <circle cx="15" cy="13" r="2" fill="currentColor"/>
+                    <path d="M12 3v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-lg font-semibold truncate"><span id="activeCharName">기본 캐릭터</span>와 대화</div>
+                  <div class="text-sm text-slate-500 dark:text-slate-400">
+                    모델: <span id="activeModelLabel" class="font-medium">gemini-2.5-flash</span>
+                    <span class="mx-2">·</span>
+                    <span class="no-vertical-wrap">테마:
+                      <span id="themeLabel">다크</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="ml-auto hidden sm:flex items-center gap-2">
+                  <button id="btnRenameSession" class="btn btn-muted tap">세션 이름</button>
+                  <button id="btnDeleteSession" class="btn btn-muted tap">세션 삭제</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messages" class="flex-1 overflow-y-auto scrollbar p-4 sm:p-6 lg:p-8 space-y-4"></div>
+
+            <!-- Composer -->
+            <div class="sticky bottom-0 z-30">
+              <div class="mx-auto max-w-4xl px-3 sm:px-0 pb-[env(safe-area-inset-bottom)]">
+                <div class="glass border border-black/5 dark:border-white/5 rounded-2xl p-2 shadow-soft">
+                  <div class="flex items-end gap-2">
+                    <textarea id="input" rows="1" placeholder="메시지를 입력하세요 (Shift+Enter 줄바꿈)"
+                      class="min-h-[44px] max-h-[30svh] flex-1 bg-transparent resize-none px-3 py-2 outline-none focus:ring-0"></textarea>
+                    <button id="btnSend" class="btn btn-brand tap !px-4" aria-label="전송">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 12l16-7-7 16-2-7-7-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                      </svg>
+                      전송
+                    </button>
+                  </div>
+                  <div class="px-2 pt-1 flex items-center justify-between text-xs text-slate-500">
+                    <div class="no-vertical-wrap">Enter 전송 · Shift+Enter 줄바꿈</div>
+                    <div id="status" class="no-vertical-wrap">대기 중</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-[12px] text-center text-slate-500 py-3">
+      <div class="mx-auto max-w-7xl px-4">
+        <span class="no-vertical-wrap">© Zeta Chat · 클라이언트 전용 데모</span>
+        <span class="mx-2">·</span>
+        <span class="no-vertical-wrap">Markdown · 코드 복사 · 대화/캐릭터 저장</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-4 z-[60] hidden">
+    <div class="glass border border-black/5 dark:border-white/5 px-4 py-2 rounded-xl shadow-soft text-sm"></div>
+  </div>
+
+  <script>
+  /***************
+   * Utilities
+   ***************/
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const now = () => new Date().toISOString();
+
+  const STORAGE = {
+    get(k, d=null){ try{ const v=localStorage.getItem(k); return v===null?d:v }catch{ return d } },
+    set(k,v){ try{ localStorage.setItem(k,v) }catch{} },
+    jget(k, d=null){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d }catch{ return d } },
+    jset(k,o){ try{ localStorage.setItem(k, JSON.stringify(o)) }catch{} },
+    del(k){ try{ localStorage.removeItem(k) }catch{} }
+  }
+
+  function toast(msg){
+    const root = $('#toast');
+    root.querySelector('div').textContent = msg;
+    root.classList.remove('hidden');
+    root.classList.add('fade-in');
+    setTimeout(()=>root.classList.add('hidden'), 1600);
+  }
+
+  function randomId(prefix='id'){
+    return prefix + '_' + Math.random().toString(36).slice(2,9);
+  }
+
+  function download(filename, content, type='text/plain'){
+    const blob = new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /***********************
+   * App State
+   ***********************/
+  const DEFAULT_CHAR = () => ({
+    id: 'char_default',
+    name: '기본 캐릭터',
+    avatar: null, // dataURL
+    systemPrompt:
+`당신은 친절하고 실용적인 AI 어시스턴트입니다.
+- 과도한 사족 없이 핵심을 먼저 답합니다.
+- 코드가 포함되면 독자가 바로 복사해 사용할 수 있도록 명확히 제시합니다.
+- 불확실하면 분명히 말하고, 필요하면 예시를 제공합니다.`,
+    createdAt: now(),
+    updatedAt: now()
+  });
+
+  const state = {
+    theme: STORAGE.get('zeta_theme', 'dark'),
+    apiKey: STORAGE.get('zeta_api_key', ''),
+    model: STORAGE.get('zeta_model', 'gemini-2.5-flash'),
+    user: {
+      name: STORAGE.get('zeta_user_name','You'),
+      role: STORAGE.get('zeta_user_role','')
+    },
+    characters: STORAGE.jget('zeta_characters', [DEFAULT_CHAR()]),
+    sessions: STORAGE.jget('zeta_sessions', {}), // id -> session
+    currentCharacterId: STORAGE.get('zeta_current_char', 'char_default'),
+    currentSessionId: STORAGE.get('zeta_current_session', null)
+  };
+
+  function saveState(){
+    STORAGE.set('zeta_theme', state.theme);
+    STORAGE.set('zeta_api_key', state.apiKey);
+    STORAGE.set('zeta_model', state.model);
+    STORAGE.set('zeta_user_name', state.user.name || '');
+    STORAGE.set('zeta_user_role', state.user.role || '');
+    STORAGE.jset('zeta_characters', state.characters);
+    STORAGE.jset('zeta_sessions', state.sessions);
+    STORAGE.set('zeta_current_char', state.currentCharacterId || '');
+    STORAGE.set('zeta_current_session', state.currentSessionId || '');
+  }
+
+  function getCurrentChar(){
+    return state.characters.find(c=>c.id===state.currentCharacterId) || state.characters[0] || DEFAULT_CHAR();
+  }
+
+  function ensureSession(){
+    if(state.currentSessionId && state.sessions[state.currentSessionId]) return;
+    const id = randomId('sess');
+    const char = getCurrentChar();
+    state.sessions[id] = {
+      id, characterId: char.id,
+      title: `${char.name} · ${new Date().toLocaleString()}`,
+      messages: [],
+      createdAt: now(),
+      updatedAt: now()
+    };
+    state.currentSessionId = id;
+    saveState();
+  }
+
+  /*******************************
+   * Theme
+   *******************************/
+  function applyTheme(){
+    const root = document.documentElement;
+    if(state.theme==='dark') root.classList.add('dark'); else root.classList.remove('dark');
+    $('#themeLabel').textContent = state.theme==='dark' ? '다크' : '라이트';
+  }
+
+  /*******************************
+   * Sidebar / Lists
+   *******************************/
+  function setSidebar(open){
+    const el = $('#sidebar');
+    if(open) el.style.transform = 'translateX(0%)'
+    else el.style.transform = 'translateX(-100%)';
+  }
+
+  function renderCharacters(){
+    const wrap = $('#characterList');
+    wrap.innerHTML = '';
+    state.characters.forEach(c=>{
+      const active = c.id===state.currentCharacterId;
+      const div = document.createElement('button');
+      div.className = `w-full p-2 rounded-xl flex items-center gap-3 ${active?'bg-brand-600/10 ring-1 ring-brand-500/30':'bg-black/5 dark:bg-white/5'} hover:bg-black/10 dark:hover:bg-white/10 transition`;
+      div.innerHTML = `
+        <img alt="" class="w-10 h-10 rounded-lg object-cover ring-1 ring-black/10 dark:ring-white/10"
+             src="${c.avatar || PLACEHOLDER_AVATAR()}">
+        <div class="min-w-0 text-left">
+          <div class="text-sm font-medium truncate">${escapeHtml(c.name)}</div>
+          <div class="text-xs text-slate-500 truncate">${escapeHtml((c.systemPrompt||'').split('\n')[0] || '시스템 프롬프트 없음')}</div>
+        </div>
+        <div class="ml-auto flex items-center gap-1">
+          <button class="btn btn-muted tap !px-2 !py-1" data-act="use" data-id="${c.id}">사용</button>
+          <button class="btn btn-muted tap !px-2 !py-1" data-act="del" data-id="${c.id}">삭제</button>
+        </div>
+      `;
+      div.addEventListener('click', (e)=>{
+        const t = e.target;
+        if(t.dataset.act==='del'){
+          e.stopPropagation();
+          if(confirm('이 캐릭터를 삭제할까요?')) {
+            state.characters = state.characters.filter(x=>x.id!==c.id);
+            if(state.currentCharacterId===c.id) state.currentCharacterId = (state.characters[0]||DEFAULT_CHAR()).id;
+            saveState(); renderCharacters(); refreshHeader();
+          }
+          return;
+        }
+        // Use
+        state.currentCharacterId = c.id;
+        saveState(); renderCharacters(); refreshHeader();
+      });
+      wrap.appendChild(div);
+    });
+
+    // Prefill editor with current char
+    const cc = getCurrentChar();
+    $('#charName').value = cc.name;
+    $('#systemPrompt').value = cc.systemPrompt || '';
+    setAvatarPreview(cc.avatar);
+  }
+
+  function renderSessions(){
+    const wrap = $('#sessionList');
+    wrap.innerHTML = '';
+    const pairs = Object.values(state.sessions).sort((a,b)=> (b.updatedAt||b.createdAt).localeCompare(a.updatedAt||a.createdAt));
+    if(!pairs.length){
+      wrap.innerHTML = `<div class="text-sm text-slate-500">대화가 없습니다. 메시지를 보내 시작하세요.</div>`;
+      return;
+    }
+    pairs.forEach(s=>{
+      const active = s.id===state.currentSessionId;
+      const el = document.createElement('div');
+      el.className = `p-2 rounded-xl ${active?'bg-brand-600/10 ring-1 ring-brand-500/30':'bg-black/5 dark:bg-white/5'} hover:bg-black/10 dark:hover:bg-white/10 transition`;
+      el.innerHTML = `
+        <div class="flex items-center gap-2">
+          <div class="chip">${(getCharById(s.characterId)?.name)||'캐릭터'}</div>
+          <div class="min-w-0 flex-1 truncate font-medium">${escapeHtml(s.title)}</div>
+          <button class="btn btn-muted tap !px-2 !py-1" data-id="${s.id}" data-a="open">열기</button>
+          <button class="btn btn-muted tap !px-2 !py-1" data-id="${s.id}" data-a="rename">이름</button>
+          <button class="btn btn-muted tap !px-2 !py-1" data-id="${s.id}" data-a="del">삭제</button>
+        </div>
+      `;
+      el.addEventListener('click', (e)=>{
+        const t = e.target;
+        const id = t.dataset.id;
+        if(!id) return;
+        e.stopPropagation();
+        if(t.dataset.a==='del'){
+          if(confirm('세션을 삭제할까요?')) {
+            delete state.sessions[id];
+            if(state.currentSessionId===id) state.currentSessionId = null;
+            saveState(); renderSessions(); renderMessages(); refreshHeader();
+          }
+          return;
+        }
+        if(t.dataset.a==='rename'){
+          const newName = prompt('새 세션 이름', state.sessions[id].title);
+          if(newName){ state.sessions[id].title = newName; state.sessions[id].updatedAt = now(); saveState(); renderSessions(); refreshHeader();}
+          return;
+        }
+        state.currentSessionId = id; saveState(); renderSessions(); renderMessages(); refreshHeader();
+      });
+      wrap.appendChild(el);
+    });
+  }
+
+  function getCharById(id){ return state.characters.find(c=>c.id===id) || null }
+
+  /*******************************
+   * Header / Intro
+   *******************************/
+  function refreshHeader(){
+    const cc = getCurrentChar();
+    $('#activeCharName').textContent = cc.name;
+    $('#activeModelLabel').textContent = state.model;
+    // avatar
+    const avatarElem = $('#activeAvatar');
+    avatarElem.innerHTML = '';
+    const img = document.createElement('img');
+    img.className = 'w-12 h-12 rounded-2xl object-cover ring-1 ring-black/10 dark:ring-white/10';
+    img.src = cc.avatar || PLACEHOLDER_AVATAR();
+    img.alt = '캐릭터';
+    avatarElem.appendChild(img);
+
+    // API status
+    const s = $('#apiStatus');
+    if(state.apiKey){
+      s.textContent = '키 저장됨';
+      s.className = 'chip bg-green-500/10 text-green-700 dark:text-green-300';
+    } else {
+      s.textContent = '키 미설정';
+      s.className = 'chip';
+    }
+
+    $('#modelSelect').value = state.model;
+    $('#apiKey').value = state.apiKey ? '••••••••••••••••' : '';
+
+    // Editor prefill kept in renderCharacters()
+  }
+
+  /*******************************
+   * Messages UI
+   *******************************/
+  function messageBubble(msg, idx){
+    const isUser = msg.role==='user';
+    const name = isUser ? (state.user.name || 'You') : getCurrentChar().name;
+    const avatar = isUser ? USER_AVATAR() : (getCurrentChar().avatar || PLACEHOLDER_AVATAR());
+    const side = isUser ? 'justify-end' : 'justify-start';
+    const align = isUser ? 'items-end' : 'items-start';
+    const color = isUser ? 'bg-brand-600 text-white' : 'bg-black/5 dark:bg-white/5';
+    const ring = isUser ? 'ring-0' : 'ring-1 ring-black/5 dark:ring-white/5';
+    const actions = `
+      <div class="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition flex gap-1">
+        <button class="btn btn-muted !px-2 !py-1" data-act="copy" data-idx="${idx}">복사</button>
+        <button class="btn btn-muted !px-2 !py-1" data-act="edit" data-idx="${idx}">수정</button>
+        <button class="btn btn-muted !px-2 !py-1" data-act="del" data-idx="${idx}">삭제</button>
+      </div>
+    `;
+    return `
+      <div class="flex ${side}">
+        <div class="max-w-full sm:max-w-[80%] md:max-w-[70%] group">
+          <div class="flex ${align} gap-2 mb-1">
+            <img alt="" class="w-7 h-7 rounded-lg object-cover ring-1 ring-black/10 dark:ring-white/10" src="${avatar}">
+            <div class="text-xs text-slate-500 no-vertical-wrap">${escapeHtml(name)} · ${new Date(msg.time||Date.now()).toLocaleTimeString()}</div>
+            ${actions}
+          </div>
+          <div class="rounded-2xl ${color} ${ring} p-3 shadow-soft overflow-hidden">
+            <div class="prose prose-sm prose-slate dark:prose-invert max-w-none leading-relaxed" data-role="${msg.role}" data-idx="${idx}">
+              ${msg.html || renderMarkdown(msg.content || '')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMessages(){
+    ensureSession();
+    const sess = state.sessions[state.currentSessionId];
+    const wrap = $('#messages');
+    if(!sess || !sess.messages.length){
+      wrap.innerHTML = `
+        <div class="text-center text-slate-500 py-14">
+          <div class="text-lg font-medium">새 대화를 시작해 보세요</div>
+          <div class="mt-2">설정에서 API 키를 입력 후 메시지를 보내면 응답이 표시됩니다.</div>
+        </div>`;
+      return;
+    }
+    wrap.innerHTML = '';
+    sess.messages.forEach((m, i)=>{
+      const holder = document.createElement('div');
+      holder.className = 'fade-in';
+      holder.innerHTML = messageBubble(m, i);
+      wrap.appendChild(holder);
+    });
+    // keep scrolled to bottom
+    wrap.scrollTop = wrap.scrollHeight;
+    // rebind actions
+    $$('#messages [data-act]').forEach(btn=>{
+      btn.addEventListener('click', onMessageAction);
+    });
+    // attach code copy buttons
+    addCodeCopyButtonsWithin(wrap);
+  }
+
+  function onMessageAction(e){
+    const btn = e.currentTarget;
+    const idx = +btn.dataset.idx;
+    const sess = state.sessions[state.currentSessionId];
+    if(!sess) return;
+    const msg = sess.messages[idx];
+    if(btn.dataset.act==='copy'){
+      navigator.clipboard.writeText(msg.content || '').then(()=>toast('복사됨'));
+    } else if(btn.dataset.act==='del'){
+      if(confirm('이 메시지를 삭제할까요?')){
+        sess.messages.splice(idx,1); sess.updatedAt = now();
+        saveState(); renderMessages();
+      }
+    } else if(btn.dataset.act==='edit'){
+      const cur = msg.content || '';
+      const nv = prompt('메시지 내용 수정 (Markdown)', cur);
+      if(nv!==null){
+        msg.content = nv; msg.html = renderMarkdown(nv); sess.updatedAt = now();
+        saveState(); renderMessages();
+      }
+    }
+  }
+
+  /*********************************************
+   * Progressive Markdown Renderer (Streaming)
+   * - Balances unclosed tokens so formatting
+   *   appears correctly during typing.
+   *********************************************/
+  function progressiveMarkdown(partial){
+    let text = partial;
+    // Balance triple backticks (code fences)
+    const fenceCount = (text.match(/```/g)||[]).length;
+    if(fenceCount % 2 === 1) text += '\n```';
+    // Balance inline code `
+    const inlineCount = (text.match(/(?<!`)`(?!`)/g)||[]).length;
+    if(inlineCount % 2 === 1) text += '`';
+    // Balance bold **
+    const boldCount = (text.match(/\*\*(?!\*)/g)||[]).length;
+    if(boldCount % 2 === 1) text += '**';
+    // Balance italic * (avoid *** by removing ** first)
+    const safe = text.replace(/\*\*\*/g,''); // ignore triple
+    const itCount = (safe.match(/(^|[^\*])\*(?!\*)(?!\s)/g)||[]).length;
+    if(itCount % 2 === 1) text += '*';
+    // Balance underscores (optional)
+    const uCount = (text.match(/__(?!_)/g)||[]).length;
+    if(uCount % 2 === 1) text += '__';
+
+    return renderMarkdown(text);
+  }
+
+  function renderMarkdown(text){
+    // configure marked once
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+      headerIds: false,
+      mangle: false
+    });
+    const raw = marked.parse(text || '');
+    const clean = DOMPurify.sanitize(raw, {USE_PROFILES: {html: true}});
+    return clean;
+  }
+
+  function addCodeCopyButtonsWithin(root){
+    root.querySelectorAll('pre code').forEach(code=>{
+      // prevent duplicates
+      if(code.parentElement.querySelector('.code-copy')) return;
+      const btn = document.createElement('button');
+      btn.className = 'code-copy';
+      btn.textContent = '복사';
+      btn.addEventListener('click', ()=>{
+        navigator.clipboard.writeText(code.innerText).then(()=>toast('코드 복사됨'));
+      });
+      code.parentElement.appendChild(btn);
+      // highlight
+      try { hljs.highlightElement(code); } catch {}
+    });
+  }
+
+  /*******************************
+   * Send / Stream
+   *******************************/
+  let isSending = false;
+
+  async function sendMessage(){
+    if(isSending) return;
+    const input = $('#input');
+    const content = input.value.trim();
+    if(!content) return;
+    if(!state.apiKey){
+      toast('먼저 API 키를 저장하세요.');
+      return;
+    }
+
+    ensureSession();
+    const sess = state.sessions[state.currentSessionId];
+    // push user msg
+    const userMsg = { role:'user', content, html: renderMarkdown(content), time: Date.now() };
+    sess.messages.push(userMsg); sess.updatedAt = now();
+    saveState(); renderMessages(); input.value = ''; input.style.height='auto';
+
+    // push empty assistant msg placeholder
+    const aiMsg = { role:'model', content:'', html:'', time: Date.now() };
+    sess.messages.push(aiMsg); saveState(); renderMessages();
+
+    // Stream or typewriter
+    isSending = true; $('#status').textContent = '응답 생성 중…';
+    try{
+      const text = await streamFromGemini(sess);
+      aiMsg.content = text;
+      aiMsg.html = renderMarkdown(text);
+      sess.updatedAt = now(); saveState(); renderMessages();
+    }catch(err){
+      console.error(err);
+      aiMsg.content = `**에러**: ${err.message || err}`;
+      aiMsg.html = renderMarkdown(aiMsg.content);
+      sess.updatedAt = now(); saveState(); renderMessages();
+    }finally{
+      isSending = false; $('#status').textContent = '대기 중';
+    }
+  }
+
+  function buildGeminiPayload(sess){
+    const cc = getCurrentChar();
+    const contents = [];
+    for(const m of sess.messages){
+      if(m.role==='system') continue;
+      if(m.role==='user' || m.role==='model'){
+        contents.push({ role: m.role==='user' ? 'user' : 'model', parts:[{text:m.content||''}]});
+      }
+    }
+    // include user persona hint at the top (first turn influence)
+    const persona = state.user.name || state.user.role ? `사용자 정보: 이름=${state.user.name||'You'}${state.user.role?`, 역할=${state.user.role}`:''}` : '';
+    const system_instruction = {
+      parts: [{text: [cc.systemPrompt || '', persona].filter(Boolean).join('\n\n')}]
+    };
+    return { contents, system_instruction };
+  }
+
+  async function streamFromGemini(sess){
+    const { contents, system_instruction } = buildGeminiPayload(sess);
+    const model = state.model;
+    const key = state.apiKey;
+    let streamOk = false;
+    let finalText = '';
+
+    // Try native streaming endpoint first
+    try{
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?key=${encodeURIComponent(key)}`;
+      const res = await fetch(endpoint, {
+        method:'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ contents, system_instruction })
+      });
+      if(!res.ok) throw new Error(`HTTP ${res.status} - ${await res.text().catch(()=>res.statusText)}`);
+      if(!res.body) throw new Error('스트림을 지원하지 않는 응답');
+      streamOk = true;
+
+      // streaming parse (NDJSON / SSE "data:" lines tolerant)
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      const wrap = $('#messages');
+      const idx = state.sessions[state.currentSessionId].messages.length - 1; // last is assistant placeholder
+
+      while(true){
+        const {value, done} = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value, {stream:true});
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() || ''; // keep last partial line
+
+        for(const line of lines){
+          const s = line.trim();
+          if(!s) continue;
+          let jsonStr = s.startsWith('data:') ? s.slice(5).trim() : s;
+          try{
+            const obj = JSON.parse(jsonStr);
+            const chunk = extractGeminiText(obj);
+            if(chunk){
+              finalText += chunk;
+              updateStreamingPreview(idx, finalText);
+            }
+          }catch(_){}
+        }
+      }
+      // finish
+      return finalText || '(빈 응답)';
+    }catch(err){
+      console.warn('stream error, fallback to non-stream', err);
+    }
+
+    // Fallback: non-stream + typewriter
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+    const res = await fetch(endpoint, {
+      method:'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ contents, system_instruction })
+    });
+    if(!res.ok){
+      const t = await res.text().catch(()=>res.statusText);
+      throw new Error(`HTTP ${res.status} - ${t}`);
+    }
+    const data = await res.json();
+    finalText = extractGeminiText(data) || '';
+    await typewriterAppend(finalText);
+    return finalText;
+  }
+
+  function extractGeminiText(obj){
+    try{
+      // Handle both stream chunks and full response
+      // Stream chunk: { candidates:[{content:{parts:[{text:"..."}]}}] }
+      // Full: same, or may include promptFeedback etc.
+      const cands = obj.candidates || [];
+      for(const c of cands){
+        if(Array.isArray(c.content?.parts)){
+          // stream chunk may send incremental text in parts[0].text
+          const txt = c.content.parts.map(p=>p.text || '').join('');
+          if(txt) return txt;
+        }
+        if(Array.isArray(c?.parts)){
+          const txt = c.parts.map(p=>p.text||'').join('');
+          if(txt) return txt;
+        }
+      }
+      // Some stream events may have {text:"..."} directly
+      if(obj.text) return obj.text;
+    }catch(_){}
+    return '';
+  }
+
+  function updateStreamingPreview(lastIdx, partial){
+    const wrap = $('#messages');
+    const target = wrap.querySelector(`.prose[data-idx="${lastIdx}"]`);
+    if(!target) return;
+    target.innerHTML = progressiveMarkdown(partial);
+    addCodeCopyButtonsWithin(target.closest('.rounded-2xl') || target);
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  async function typewriterAppend(full){
+    const wrap = $('#messages');
+    const lastIdx = state.sessions[state.currentSessionId].messages.length - 1;
+    let built = '';
+    for(const ch of full){
+      built += ch;
+      updateStreamingPreview(lastIdx, built);
+      await sleep(6); // type speed
+    }
+  }
+
+  /*******************************
+   * Avatars
+   *******************************/
+  function PLACEHOLDER_AVATAR(){
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+        <rect width="100%" height="100%" rx="20" fill="#2e6ff2"/>
+        <g fill="#fff">
+          <rect x="30" y="52" width="60" height="42" rx="10"/>
+          <circle cx="48" cy="73" r="6"/><circle cx="72" cy="73" r="6"/>
+          <rect x="56" y="20" width="8" height="18" rx="4"/>
+        </g>
+      </svg>`);
+  }
+  function USER_AVATAR(){
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+        <rect width="100%" height="100%" rx="20" fill="#111827"/>
+        <circle cx="60" cy="46" r="18" fill="#e5e7eb"/>
+        <rect x="24" y="72" width="72" height="28" rx="14" fill="#e5e7eb"/>
+      </svg>`);
+  }
+  function setAvatarPreview(dataUrl){
+    $('#charAvatarPreview').src = dataUrl || PLACEHOLDER_AVATAR();
+  }
+
+  /*******************************
+   * Export
+   *******************************/
+  function exportCurrentMarkdown(){
+    ensureSession();
+    const s = state.sessions[state.currentSessionId];
+    const cc = getCurrentChar();
+    let out = `# 대화: ${s.title}\n\n`;
+    out += `- 캐릭터: ${cc.name}\n- 모델: ${state.model}\n- 내보낸 시각: ${new Date().toLocaleString()}\n\n---\n\n`;
+    s.messages.forEach(m=>{
+      out += `### ${m.role==='user'?(state.user.name||'You'):cc.name}\n\n`;
+      out += (m.content||'') + '\n\n';
+    });
+    download((s.title||'chat').replace(/[\\/:*?"<>|]+/g,'_')+'.md', out, 'text/markdown;charset=utf-8');
+  }
+
+  function exportCurrentJSON(){
+    ensureSession();
+    const s = state.sessions[state.currentSessionId];
+    const payload = {
+      meta: {
+        title: s.title,
+        character: getCurrentChar(),
+        model: state.model,
+        exportedAt: now(),
+        user: state.user
+      },
+      messages: s.messages
+    };
+    download((s.title||'chat').replace(/[\\/:*?"<>|]+/g,'_')+'.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+  }
+
+  /*******************************
+   * Misc Helpers
+   *******************************/
+  function escapeHtml(str=''){
+    return str.replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  }
+
+  // Auto-grow textarea
+  function autoGrow(el){
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight) + 'px';
+  }
+
+  /*******************************
+   * Event Bindings
+   *******************************/
+  function bindEvents(){
+    // Sidebar toggles
+    $('#btnOpenSidebar').addEventListener('click', ()=>setSidebar(true));
+    $('#btnOpenSidebar2').addEventListener('click', ()=>setSidebar(true));
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') setSidebar(false) });
+
+    // Save API key
+    $('#btnSaveKey').addEventListener('click', ()=>{
+      const val = prompt('Gemini API 키를 입력하세요 (브라우저에만 저장)', state.apiKey ? '': '');
+      if(val!==null){
+        state.apiKey = val.trim();
+        saveState(); refreshHeader();
+        toast('API 키 저장됨');
+      }
+    });
+
+    // Check API key
+    $('#btnCheckKey').addEventListener('click', async ()=>{
+      if(!state.apiKey) { toast('키가 없습니다.'); return; }
+      try{
+        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(state.apiKey)}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        toast('키 확인 완료');
+        $('#apiStatus').textContent='사용 가능';
+        $('#apiStatus').className='chip bg-green-500/10 text-green-700 dark:text-green-300';
+      }catch(e){ toast('키 확인 실패'); }
+    });
+
+    // Model select
+    $('#modelSelect').addEventListener('change', (e)=>{
+      state.model = e.target.value; saveState(); refreshHeader();
+      toast(`모델: ${state.model}`);
+    });
+
+    // Character editor
+    $('#btnUploadAvatar').addEventListener('click', ()=>$('#avatarFile').click());
+    $('#avatarFile').addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        setAvatarPreview(ev.target.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    $('#btnSaveCharacter').addEventListener('click', ()=>{
+      const name = $('#charName').value.trim() || '새 캐릭터';
+      const systemPrompt = $('#systemPrompt').value.trim();
+      const avatar = $('#charAvatarPreview').src || null;
+      // if editing current
+      let cur = getCurrentChar();
+      if(cur.id==='char_default'){
+        // add new character
+        const id = randomId('char');
+        const obj = { id, name, systemPrompt, avatar, createdAt: now(), updatedAt: now() };
+        state.characters.push(obj);
+        state.currentCharacterId = id;
+      }else{
+        cur.name = name; cur.systemPrompt = systemPrompt; cur.avatar = avatar; cur.updatedAt = now();
+      }
+      saveState(); renderCharacters(); refreshHeader();
+      toast('캐릭터 저장됨');
+    });
+
+    $('#btnUseCharacter').addEventListener('click', ()=>{
+      // Start new chat with this character
+      const cc = getCurrentChar();
+      const id = randomId('sess');
+      state.sessions[id] = {
+        id, characterId: cc.id, title: `${cc.name} · ${new Date().toLocaleString()}`,
+        messages: [], createdAt: now(), updatedAt: now()
+      };
+      state.currentSessionId = id; saveState(); renderSessions(); renderMessages(); refreshHeader();
+      toast(`새 대화: ${cc.name}`);
+      setSidebar(false);
+    });
+
+    $('#btnNewCharacter').addEventListener('click', ()=>{
+      // Create a fresh editor (not saved yet)
+      $('#charName').value = '';
+      $('#systemPrompt').value = '';
+      setAvatarPreview(null);
+      toast('새 캐릭터 작성');
+    });
+
+    // User persona
+    $('#btnSaveUser').addEventListener('click', ()=>{
+      state.user.name = $('#userName').value.trim();
+      state.user.role = $('#userRole').value.trim();
+      saveState(); toast('사용자 페르소나 저장됨');
+    });
+
+    // Sessions
+    $('#btnNewChat').addEventListener('click', ()=>{
+      const cc = getCurrentChar();
+      const id = randomId('sess');
+      state.sessions[id] = { id, characterId: cc.id, title: `${cc.name} · ${new Date().toLocaleString()}`, messages: [], createdAt: now(), updatedAt: now() };
+      state.currentSessionId = id; saveState(); renderSessions(); renderMessages(); refreshHeader();
+    });
+    $('#btnRenameSession').addEventListener('click', ()=>{
+      ensureSession();
+      const s = state.sessions[state.currentSessionId];
+      const nv = prompt('세션 이름', s.title);
+      if(nv){ s.title = nv; s.updatedAt = now(); saveState(); renderSessions(); refreshHeader(); }
+    });
+    $('#btnDeleteSession').addEventListener('click', ()=>{
+      ensureSession();
+      const s = state.sessions[state.currentSessionId];
+      if(confirm('현재 세션을 삭제할까요?')){
+        delete state.sessions[s.id];
+        state.currentSessionId = null; saveState(); renderSessions(); renderMessages(); refreshHeader();
+      }
+    });
+    $('#btnClearAll').addEventListener('click', ()=>{
+      if(confirm('모든 대화와 캐릭터를 삭제합니다. 계속할까요?')){
+        STORAGE.del('zeta_sessions'); STORAGE.del('zeta_characters'); STORAGE.del('zeta_current_session'); STORAGE.del('zeta_current_char');
+        state.sessions = {}; state.characters = [DEFAULT_CHAR()]; state.currentCharacterId = 'char_default'; state.currentSessionId = null;
+        saveState(); renderCharacters(); renderSessions(); renderMessages(); refreshHeader();
+        toast('초기화되었습니다.');
+      }
+    });
+
+    // Export
+    $('#btnExport').addEventListener('click', exportCurrentMarkdown);
+    $('#btnExportMD').addEventListener('click', exportCurrentMarkdown);
+    $('#btnExportJSON').addEventListener('click', exportCurrentJSON);
+
+    // Theme
+    $('#btnTheme').addEventListener('click', ()=>{
+      state.theme = state.theme==='dark'?'light':'dark';
+      saveState(); applyTheme();
+    });
+
+    // Composer
+    const input = $('#input');
+    input.addEventListener('input', ()=>autoGrow(input));
+    input.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' && !e.shiftKey){
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    $('#btnSend').addEventListener('click', sendMessage);
+
+    // Click outside sidebar on mobile to close (simple)
+    document.addEventListener('click', (e)=>{
+      const side = $('#sidebar');
+      if(window.innerWidth>=768) return;
+      const withinSidebar = side.contains(e.target);
+      const isMenuBtn = $('#btnOpenSidebar').contains(e.target);
+      if(!withinSidebar && !isMenuBtn){ setSidebar(false); }
+    });
+
+    // Fill persona inputs
+    $('#userName').value = state.user.name || '';
+    $('#userRole').value = state.user.role || '';
+  }
+
+  /*******************************
+   * Boot
+   *******************************/
+  function boot(){
+    applyTheme();
+    renderCharacters();
+    renderSessions();
+    refreshHeader();
+    renderMessages();
+    bindEvents();
+  }
+  document.addEventListener('DOMContentLoaded', boot);
+
+  </script>
+
+  <script>
+    // Ensure code highlighting theme adapts to dark mode automatically (CSS uses GitHub Dark).
+    // No extra JS required beyond hljs.highlightElement calls done after render.
+  </script>
+</body>
+</html>
