@@ -41,6 +41,11 @@
   <!-- Marked (final pass rendering after stream ends) -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+  <!-- KaTeX for LaTeX rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
   <style>
     /* App-level helpers */
     :root { color-scheme: light dark; }
@@ -60,6 +65,47 @@
     .visually-hidden { position:absolute !important; clip: rect(1px,1px,1px,1px); padding:0 !important; border:0 !important; height:1px !important; width:1px !important; overflow:hidden; white-space:nowrap; }
     /* Prevent vertical text wrapping in tight spaces */
     .btn-label { white-space: nowrap; }
+    /* Code block collapse/expand */
+    .code-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background: rgba(0,0,0,0.05); 
+      padding: 0.5rem 1rem; 
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      cursor: pointer;
+    }
+    .dark .code-header { background: rgba(255,255,255,0.05); border-bottom-color: rgba(255,255,255,0.1); }
+    .code-collapsed { display: none; }
+    /* Image preview */
+    .img-preview-container { position: relative; display: inline-block; }
+    .img-preview-remove { 
+      position: absolute; 
+      top: 0.25rem; 
+      right: 0.25rem; 
+      background: rgba(0,0,0,0.6); 
+      color: white; 
+      border-radius: 50%; 
+      width: 24px; 
+      height: 24px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+    }
+    /* Pinned messages */
+    #pinnedMessages { max-height: 200px; overflow-y: auto; }
+    /* Formatting toolbar */
+    .format-toolbar button { 
+      padding: 0.25rem 0.5rem; 
+      border-radius: 0.25rem; 
+      font-size: 0.875rem;
+      background: transparent;
+      border: 1px solid currentColor;
+      opacity: 0.7;
+    }
+    .format-toolbar button:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+    .dark .format-toolbar button:hover { background: rgba(255,255,255,0.05); }
   </style>
 </head>
 
@@ -94,6 +140,14 @@
           </div>
 
           <div class="flex items-center gap-2">
+            <button id="btnSummary" class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                    title="대화 요약">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="hidden sm:inline btn-label">요약</span>
+            </button>
+
             <button id="btnExport" class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                     title="내보내기" aria-haspopup="menu" aria-expanded="false">
               <!-- Download Icon -->
@@ -171,6 +225,31 @@
                   <option>gemini-2.5-flash-lite</option>
                 </select>
               </div>
+
+              <!-- Advanced API Parameters -->
+              <div class="space-y-2">
+                <label class="text-sm font-medium block">Temperature (창의성)</label>
+                <div class="flex items-center gap-2">
+                  <input id="sliderTemp" type="range" min="0" max="2" step="0.1" value="0.7" class="flex-1" />
+                  <span id="tempValue" class="text-sm w-10">0.7</span>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-sm font-medium block">Top P</label>
+                <div class="flex items-center gap-2">
+                  <input id="sliderTopP" type="range" min="0" max="1" step="0.05" value="0.95" class="flex-1" />
+                  <span id="topPValue" class="text-sm w-10">0.95</span>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-sm font-medium block">Top K</label>
+                <div class="flex items-center gap-2">
+                  <input id="sliderTopK" type="range" min="1" max="100" step="1" value="40" class="flex-1" />
+                  <span id="topKValue" class="text-sm w-10">40</span>
+                </div>
+              </div>
             </section>
 
             <!-- Character -->
@@ -180,7 +259,8 @@
                 <label class="text-sm font-medium block">시스템 프롬프트</label>
                 <textarea id="txtSystemPrompt" rows="4"
                           class="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2"
-                          placeholder="예) 당신은 친근하고 위트있는 소크라테스 스타일의 멘토입니다."></textarea>
+                          placeholder="예) 당신은 친근하고 위트있는 소크라테스 스타일의 멘토입니다. {{persona_name}}와 대화할 때는 항상 격려하세요. 현재 날짜: {{current_date}}"></textarea>
+                <p class="text-xs text-neutral-500">플레이스홀더: {{persona_name}}, {{persona_role}}, {{current_date}}, {{current_time}}</p>
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-medium block">캐릭터 프로필 이미지</label>
@@ -200,6 +280,11 @@
                 <div class="flex gap-2 mt-2">
                   <button id="btnNewCharacter" class="rounded-xl px-3 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700">새 캐릭터</button>
                   <button id="btnDeleteCharacter" class="rounded-xl px-3 py-2 bg-red-600 text-white hover:bg-red-700">삭제</button>
+                </div>
+                <div class="flex gap-2 mt-2">
+                  <button id="btnImportChar" class="rounded-xl px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 flex-1">가져오기</button>
+                  <button id="btnExportChar" class="rounded-xl px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 flex-1">내보내기</button>
+                  <input type="file" id="fileImportChar" accept=".json" class="hidden" />
                 </div>
               </div>
             </section>
@@ -223,6 +308,10 @@
             <!-- Sessions -->
             <section class="space-y-3">
               <h2 class="text-sm font-semibold uppercase tracking-wider text-neutral-500">대화 목록</h2>
+              <div class="mb-2">
+                <input id="searchSessions" type="text" placeholder="대화 검색..." 
+                       class="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm" />
+              </div>
               <div class="flex gap-2">
                 <button id="btnNewChat" class="rounded-xl px-3 py-2 bg-emerald-600 text-white hover:bg-emerald-700 flex-1">새 대화</button>
                 <button id="btnDeleteChat" class="rounded-xl px-3 py-2 bg-red-600 text-white hover:bg-red-700">삭제</button>
@@ -251,6 +340,9 @@
           </div>
         </div>
 
+        <!-- Pinned Messages -->
+        <div id="pinnedMessages" class="mt-4 hidden space-y-2"></div>
+
         <!-- Messages -->
         <div id="messages" class="flex-1 chat-scroll overflow-y-auto pt-4 pb-40">
           <!-- dynamically filled -->
@@ -260,10 +352,28 @@
         <div class="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur">
           <div class="max-w-6xl mx-auto px-3 sm:px-4 py-3">
             <div class="rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-soft">
+              <!-- Image Preview -->
+              <div id="imagePreviewContainer" class="hidden p-2 border-b border-neutral-200 dark:border-neutral-800"></div>
+
+              <!-- Formatting Toolbar -->
+              <div class="format-toolbar flex items-center gap-2 px-3 pt-2 flex-wrap">
+                <button id="btnBold" title="굵게" class="font-bold">B</button>
+                <button id="btnItalic" title="기울임" class="italic">I</button>
+                <button id="btnCode" title="인라인 코드" class="font-mono">`</button>
+                <button id="btnList" title="목록">•</button>
+              </div>
+
               <div class="flex items-end gap-2 p-2">
                 <textarea id="composer" rows="1" placeholder="메시지를 입력하세요. Shift+Enter 줄바꿈, Ctrl/Cmd+Enter 전송"
                   class="flex-1 resize-none rounded-xl bg-transparent outline-none px-3 py-2" ></textarea>
                 <div class="flex flex-col sm:flex-row items-stretch gap-2">
+                  <button id="btnVoice" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700" title="음성 입력">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" stroke="currentColor" stroke-width="2"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4m-4 0h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  </button>
+                  <button id="btnImage" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700" title="이미지 업로드">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="m21 15-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <input type="file" id="fileImage" accept="image/*" class="hidden" />
+                  </button>
                   <button id="btnSend" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m5 12 3.5 2L20 6 11 19v-5L5 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     <span class="btn-label">전송</span>
@@ -313,6 +423,9 @@
       CURRENT_CHAR: 'zeta_current_character_id',
       SESSIONS: 'zeta_sessions',
       CURRENT_SESSION: 'zeta_current_session_id',
+      TEMPERATURE: 'zeta_temperature',
+      TOP_P: 'zeta_top_p',
+      TOP_K: 'zeta_top_k',
     };
 
     /*********************
@@ -324,6 +437,12 @@
     const uid = (p='id') => p + '_' + Math.random().toString(36).slice(2,10);
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+    // Global abort controller for stopping generation
+    let currentAbortController = null;
+
+    // Attached image data
+    let attachedImage = null;
 
     function showToast(msg, ms=1800) {
       const el = $('#toastInner');
@@ -366,6 +485,15 @@
       getModel() { return localStorage.getItem(LS.MODEL) || 'gemini-2.0-flash'; },
       setModel(m) { localStorage.setItem(LS.MODEL, m); },
 
+      getTemperature() { return parseFloat(localStorage.getItem(LS.TEMPERATURE) || '0.7'); },
+      setTemperature(t) { localStorage.setItem(LS.TEMPERATURE, String(t)); },
+
+      getTopP() { return parseFloat(localStorage.getItem(LS.TOP_P) || '0.95'); },
+      setTopP(p) { localStorage.setItem(LS.TOP_P, String(p)); },
+
+      getTopK() { return parseInt(localStorage.getItem(LS.TOP_K) || '40'); },
+      setTopK(k) { localStorage.setItem(LS.TOP_K, String(k)); },
+
       getPersona() {
         try { return JSON.parse(localStorage.getItem(LS.PERSONA) || '{}'); } catch { return {}; }
       },
@@ -404,7 +532,20 @@
         chars = [{
           id,
           name: 'Zeta Mentor',
-          systemPrompt: '당신은 친근하고 정확하며, 코드/UX/접근성에 정통한 프론트엔드 멘토입니다. 짧고 명료하지만 필요한 코드는 완성도로 제공합니다.',
+          systemPrompt: `당신은 친근하고 정확하며, 코드/UX/접근성에 정통한 프론트엔드 멘토입니다. 짧고 명료하지만 필요한 코드는 완성도로 제공합니다.
+
+**리치 텍스트 규칙:**
+- 중요한 정보는 **굵게** 표시
+- 강조하고 싶은 내용은 *기울임*으로
+- 코드나 기술 용어는 \`코드 형식\`으로
+- 긴 코드는 코드 블록(```)으로 제공
+- 상황 묘사나 감정 표현은 *[설명]* 형태로 추가
+- 수학 공식은 LaTeX 형식($$...$$)으로 표현
+
+**대화 스타일:**
+- 이전 대화 내용을 잘 기억하고 맥락을 유지합니다
+- 캐릭터처럼 일관된 페르소나를 유지합니다
+- 사용자와의 관계를 발전시켜 나갑니다`,
           avatar: '', // dataURL
           defaultModel: 'gemini-2.0-flash'
         }];
@@ -423,6 +564,7 @@
           createdAt: nowIso(),
           updatedAt: nowIso(),
           messages: [],
+          pinnedMessageIds: [],
         };
         Store.setSessions(sessions);
         Store.setCurrentSessionId(sId);
@@ -494,8 +636,23 @@
       _openCodeBlock(lang) {
         this.state.codeBlock = true;
         this.state.codeLang = (lang || '').trim();
+        
+        // Create header for collapse/expand
+        const header = document.createElement('div');
+        header.className = 'code-header';
+        const langLabel = document.createElement('span');
+        langLabel.textContent = this.state.codeLang || 'code';
+        langLabel.className = 'text-sm font-medium';
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent = '접기';
+        toggleBtn.className = 'text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-700';
+        header.appendChild(langLabel);
+        header.appendChild(toggleBtn);
+        
         const pre = document.createElement('pre');
         pre.className = 'mt-2 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-auto';
+        pre.appendChild(header);
+        
         const code = document.createElement('code');
         if (this.state.codeLang) code.classList.add(this.state.codeLang);
         pre.appendChild(code);
@@ -503,11 +660,19 @@
         this.state.codeEl = code;
         this.state.codePre = pre;
 
+        // Toggle collapse/expand
+        header.addEventListener('click', () => {
+          const isCollapsed = code.classList.contains('code-collapsed');
+          code.classList.toggle('code-collapsed');
+          toggleBtn.textContent = isCollapsed ? '접기' : '펼치기';
+        });
+
         // Copy button (will style for theme)
         const btn = document.createElement('button');
         btn.className = 'copy-btn ' + (this.themeGetter()==='dark' ? '' : 'light');
         btn.textContent = '복사';
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
           try {
             await navigator.clipboard.writeText(this.state.codeEl.textContent || '');
             showToast('코드가 복사되었습니다.');
@@ -633,19 +798,59 @@
         const html = marked.parse(this.state.buf, { breaks: true });
         const target = containerForFinal || this.container;
         target.innerHTML = html;
-        // add copy buttons to code blocks
+        
+        // Add collapse/expand to code blocks
         $$('pre > code', target).forEach(code => {
           const pre = code.parentElement;
+          
+          // Add header for collapse
+          const lang = code.className.split(' ').find(c => c.startsWith('language-'))?.replace('language-', '') || 'code';
+          const header = document.createElement('div');
+          header.className = 'code-header';
+          const langLabel = document.createElement('span');
+          langLabel.textContent = lang;
+          langLabel.className = 'text-sm font-medium';
+          const toggleBtn = document.createElement('button');
+          toggleBtn.textContent = '접기';
+          toggleBtn.className = 'text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-700';
+          header.appendChild(langLabel);
+          header.appendChild(toggleBtn);
+          pre.insertBefore(header, code);
+          
+          // Toggle handler
+          header.addEventListener('click', () => {
+            const isCollapsed = code.classList.contains('code-collapsed');
+            code.classList.toggle('code-collapsed');
+            toggleBtn.textContent = isCollapsed ? '접기' : '펼치기';
+          });
+          
+          // Copy button
           const btn = document.createElement('button');
           btn.className = 'copy-btn ' + (this.themeGetter()==='dark' ? '' : 'light');
           btn.textContent = '복사';
-          btn.addEventListener('click', async () => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
             try { await navigator.clipboard.writeText(code.textContent || ''); showToast('코드가 복사되었습니다.'); }
             catch { showToast('복사 실패'); }
           });
           pre.appendChild(btn);
           try { hljs.highlightElement(code); } catch {}
         });
+        
+        // Render LaTeX if KaTeX is available
+        if (window.renderMathInElement) {
+          try {
+            window.renderMathInElement(target, {
+              delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false},
+                {left: '\\(', right: '\\)', display: false},
+                {left: '\\[', right: '\\]', display: true}
+              ],
+              throwOnError: false
+            });
+          } catch (e) { console.log('LaTeX render error:', e); }
+        }
       }
 
       getRaw() { return this.state.buf; }
@@ -673,29 +878,40 @@
       return el;
     }
 
-    function msgActions(message, onCopy, onEdit, onDelete) {
+    function msgActions(message, onCopy, onEdit, onDelete, onPin, onRegenerate, onTTS) {
       const a = document.createElement('div');
       a.className = 'msg-actions absolute -top-2 ' + (message.role==='user' ? 'right-2' : 'left-2') + ' flex gap-1';
-      const mkBtn = (title, svg) => {
+      const mkBtn = (title, text) => {
         const b = document.createElement('button');
         b.className = 'rounded-lg px-2 py-1 text-xs bg-neutral-900/70 text-white dark:bg-white/80 dark:text-neutral-900 hover:opacity-90';
         b.title = title;
-        b.innerHTML = svg;
+        b.textContent = text;
         return b;
       };
+      
       const copyB = mkBtn('복사', '복사');
-      copyB.textContent = '복사';
       copyB.addEventListener('click', onCopy);
 
       const editB = mkBtn('수정', '수정');
-      editB.textContent = '수정';
       if (onEdit) editB.addEventListener('click', onEdit); else editB.disabled = true;
 
       const delB = mkBtn('삭제', '삭제');
-      delB.textContent = '삭제';
       delB.addEventListener('click', onDelete);
+      
+      const pinB = mkBtn('고정', '📌');
+      if (onPin) pinB.addEventListener('click', onPin);
+      
+      const regenB = mkBtn('재생성', '🔄');
+      if (onRegenerate) regenB.addEventListener('click', onRegenerate);
+      
+      const ttsB = mkBtn('읽기', '🔊');
+      if (onTTS) ttsB.addEventListener('click', onTTS);
 
-      a.append(copyB, editB, delB);
+      a.append(copyB);
+      if (onEdit) a.append(editB);
+      a.append(delB, pinB);
+      if (onRegenerate) a.append(regenB);
+      if (onTTS) a.append(ttsB);
       return a;
     }
 
@@ -732,7 +948,10 @@
           $('#composer').value = message.content || '';
           deleteMessageAndFollowing(message.id);
         } : null,
-        () => { deleteSingleMessage(message.id); }
+        () => { deleteSingleMessage(message.id); },
+        () => { togglePinMessage(message.id); },
+        !isUser ? () => { regenerateResponse(); } : null,
+        !isUser ? () => { speakText(message.content || ''); } : null
       );
       wrap.appendChild(actions);
 
@@ -771,7 +990,8 @@
         title,
         createdAt: nowIso(),
         updatedAt: nowIso(),
-        messages: []
+        messages: [],
+        pinnedMessageIds: [],
       };
       const all = Store.getSessions();
       all[sId] = sess;
@@ -818,6 +1038,58 @@
         sess.updatedAt = nowIso();
         saveSession(sess);
         renderChat();
+      }
+    }
+
+    function togglePinMessage(msgId) {
+      const sess = currentSession();
+      if (!sess.pinnedMessageIds) sess.pinnedMessageIds = [];
+      const idx = sess.pinnedMessageIds.indexOf(msgId);
+      if (idx >= 0) {
+        sess.pinnedMessageIds.splice(idx, 1);
+        showToast('메시지 고정이 해제되었습니다.');
+      } else {
+        sess.pinnedMessageIds.push(msgId);
+        showToast('메시지가 고정되었습니다.');
+      }
+      sess.updatedAt = nowIso();
+      saveSession(sess);
+      renderPinnedMessages();
+    }
+
+    function regenerateResponse() {
+      const sess = currentSession();
+      if (sess.messages.length < 2) return;
+      // Remove last AI message
+      if (sess.messages[sess.messages.length - 1].role === 'model') {
+        sess.messages.pop();
+        sess.updatedAt = nowIso();
+        saveSession(sess);
+        renderChat();
+        // Resend message
+        sendMessage(true);
+      }
+    }
+
+    function speakText(text) {
+      if (!window.speechSynthesis) {
+        showToast('음성 합성을 지원하지 않는 브라우저입니다.');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR';
+      window.speechSynthesis.speak(utterance);
+      showToast('음성 재생 중...');
+    }
+
+    function renameSession(sessId, newTitle) {
+      const all = Store.getSessions();
+      if (all[sessId]) {
+        all[sessId].title = newTitle;
+        all[sessId].updatedAt = nowIso();
+        Store.setSessions(all);
+        renderSessionsList();
       }
     }
 
@@ -931,30 +1203,86 @@
       showToast('캐릭터가 삭제되었습니다.');
     }
 
+    function exportCharacter() {
+      const id = Store.getCurrentCharId();
+      const char = Store.getCharacters().find(c => c.id === id);
+      if (!char) return;
+      const json = JSON.stringify(char, null, 2);
+      downloadFile(`character_${char.name}.json`, json, 'application/json');
+      showToast('캐릭터가 내보내기 되었습니다.');
+    }
+
+    function importCharacter(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const char = JSON.parse(e.target.result);
+          char.id = uid('char'); // New ID
+          const chars = Store.getCharacters();
+          chars.push(char);
+          Store.setCharacters(chars);
+          Store.setCurrentCharId(char.id);
+          renderCharactersList();
+          $('#inpCharName').value = char.name || '';
+          $('#txtSystemPrompt').value = char.systemPrompt || '';
+          $('#imgPreview').src = char.avatar || '';
+          setHeaderAvatars();
+          showToast('캐릭터가 가져오기 되었습니다.');
+        } catch (e) {
+          showToast('캐릭터 파일 읽기 실패');
+        }
+      };
+      reader.readAsText(file);
+    }
+
     /*******************
      * Chat Rendering  *
      *******************/
-    function renderSessionsList() {
+    function renderSessionsList(filter='') {
       const ul = $('#listSessions');
       ul.innerHTML = '';
       const sessions = sessionsListSorted();
-      sessions.forEach(sess => {
+      const filtered = filter ? sessions.filter(sess => {
+        const titleMatch = (sess.title || '').toLowerCase().includes(filter.toLowerCase());
+        const contentMatch = sess.messages.some(m => (m.content || '').toLowerCase().includes(filter.toLowerCase()));
+        return titleMatch || contentMatch;
+      }) : sessions;
+      
+      filtered.forEach(sess => {
         const li = document.createElement('li');
         li.className = 'flex items-center justify-between gap-2 p-2 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer';
+        
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'flex-1 min-w-0';
+        
         const title = document.createElement('div');
         title.className = 'truncate';
         const char = Store.getCharacters().find(c => c.id === sess.characterId);
         title.textContent = (sess.title || '대화') + (char ? ` · ${char.name}` : '');
+        
         const time = document.createElement('div');
         time.className = 'text-xs text-neutral-500';
         time.textContent = new Date(sess.updatedAt).toLocaleString();
-        li.append(title, time);
+        
+        leftDiv.append(title, time);
+        
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️';
+        editBtn.className = 'text-sm px-2 py-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded';
+        editBtn.title = '이름 변경';
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const newTitle = prompt('새로운 대화 제목:', sess.title);
+          if (newTitle) renameSession(sess.id, newTitle.trim());
+        });
+        
+        li.append(leftDiv, editBtn);
         if (sess.id === Store.getCurrentSessionId()) {
           li.classList.add('ring-2','ring-emerald-400');
         }
         li.addEventListener('click', () => {
           Store.setCurrentSessionId(sess.id);
-          renderSessionsList();
+          renderSessionsList(filter);
           renderChat();
         });
         ul.appendChild(li);
@@ -971,6 +1299,9 @@
       const hasKey = !!Store.getKey();
       $('#bannerNoKey').classList.toggle('hidden', hasKey);
 
+      // Render pinned messages
+      renderPinnedMessages();
+
       sess.messages.forEach(msg => {
         const { wrap, content } = messageBubble(msg);
         area.appendChild(wrap);
@@ -979,8 +1310,57 @@
         content.innerHTML = html;
         $$('pre > code', content).forEach(code => { try { hljs.highlightElement(code); } catch {} });
         addCopyButtonsScoped(content);
+        renderLatexInElement(content);
       });
       area.scrollTop = area.scrollHeight;
+    }
+
+    function renderPinnedMessages() {
+      const container = $('#pinnedMessages');
+      const sess = currentSession();
+      if (!sess || !sess.pinnedMessageIds || sess.pinnedMessageIds.length === 0) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+      }
+      
+      container.classList.remove('hidden');
+      container.innerHTML = '<h3 class="text-sm font-semibold mb-2">📌 고정된 메시지</h3>';
+      
+      sess.pinnedMessageIds.forEach(msgId => {
+        const msg = sess.messages.find(m => m.id === msgId);
+        if (!msg) return;
+        
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-sm';
+        const role = msg.role === 'user' ? '👤 사용자' : '🤖 AI';
+        const preview = (msg.content || '').slice(0, 100) + ((msg.content || '').length > 100 ? '...' : '');
+        div.innerHTML = `<div class="font-medium mb-1">${role}</div><div class="text-neutral-700 dark:text-neutral-300">${preview}</div>`;
+        
+        const unpinBtn = document.createElement('button');
+        unpinBtn.textContent = '고정 해제';
+        unpinBtn.className = 'mt-2 text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-700';
+        unpinBtn.addEventListener('click', () => togglePinMessage(msgId));
+        div.appendChild(unpinBtn);
+        
+        container.appendChild(div);
+      });
+    }
+
+    function renderLatexInElement(element) {
+      if (window.renderMathInElement) {
+        try {
+          window.renderMathInElement(element, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+            ],
+            throwOnError: false
+          });
+        } catch (e) { console.log('LaTeX render error:', e); }
+      }
     }
 
     function addCopyButtonsScoped(scope) {
@@ -1024,17 +1404,36 @@
       const ch = currentCharacter();
       const persona = Store.getPersona();
       const personaLine = (persona?.name || persona?.role) ? `사용자 정보: 이름=${persona.name||'사용자'}, 역할=${persona.role||'N/A'}` : '';
-      return [ch?.systemPrompt || '', personaLine].filter(Boolean).join('\n');
+      let systemPrompt = [ch?.systemPrompt || '', personaLine].filter(Boolean).join('\n');
+      
+      // Replace placeholders
+      const now = new Date();
+      const replacements = {
+        '{{persona_name}}': persona?.name || '사용자',
+        '{{persona_role}}': persona?.role || 'N/A',
+        '{{current_date}}': now.toLocaleDateString('ko-KR'),
+        '{{current_time}}': now.toLocaleTimeString('ko-KR'),
+      };
+      
+      for (const [placeholder, value] of Object.entries(replacements)) {
+        systemPrompt = systemPrompt.replace(new RegExp(placeholder, 'g'), value);
+      }
+      
+      return systemPrompt;
     }
 
     // Stream call to Gemini API
-    async function streamGemini({ model, contents, onDelta, onDone, onError }) {
+    async function streamGemini({ model, contents, onDelta, onDone, onError, abortSignal }) {
       const key = Store.getKey();
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`;
       const body = {
         system_instruction: { parts: [{ text: buildSystemInstruction() }]},
         contents,
-        generationConfig: { temperature: 0.7 }
+        generationConfig: { 
+          temperature: Store.getTemperature(),
+          topP: Store.getTopP(),
+          topK: Store.getTopK()
+        }
       };
 
       const res = await fetch(endpoint, {
@@ -1043,7 +1442,8 @@
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream'
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: abortSignal
       });
 
       if (!res.ok || !res.body) throw new Error('API 오류');
@@ -1091,20 +1491,31 @@
     /********************
      * Send & Streaming *
      ********************/
-    async function sendMessage() {
+    async function sendMessage(isRegenerate = false) {
       const key = Store.getKey();
       if (!key) { Sidebar.open(); showToast('먼저 API 키를 저장하세요.'); return; }
 
-      const text = $('#composer').value.trim();
-      if (!text) return;
+      const text = isRegenerate ? (currentSession().messages.filter(m => m.role === 'user').pop()?.content || '') : $('#composer').value.trim();
+      if (!text && !isRegenerate) return;
 
       const sess = currentSession();
-      const userMsg = { id: uid('m'), role: 'user', content: text, ts: nowIso() };
-      sess.messages.push(userMsg);
-      sess.updatedAt = nowIso();
-      saveSession(sess);
-      $('#composer').value = '';
-      renderChat();
+      
+      // Add user message if not regenerating
+      if (!isRegenerate) {
+        const userMsg = { id: uid('m'), role: 'user', content: text, ts: nowIso() };
+        
+        // Add image if attached
+        if (attachedImage) {
+          userMsg.image = attachedImage;
+        }
+        
+        sess.messages.push(userMsg);
+        sess.updatedAt = nowIso();
+        saveSession(sess);
+        $('#composer').value = '';
+        clearAttachedImage();
+        renderChat();
+      }
 
       // Prepare assistant message placeholder with streaming renderer
       const area = $('#messages');
@@ -1119,19 +1530,41 @@
 
       const renderer = new StreamRenderer(content, () => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'));
 
-      // Build contents from history
-      const contents = sess.messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content || '' }]
-      }));
+      // Build contents from history (with image support)
+      const contents = sess.messages.map(m => {
+        const parts = [{ text: m.content || '' }];
+        if (m.image && m.role === 'user') {
+          const base64Data = m.image.split(',')[1];
+          const mimeType = m.image.split(';')[0].split(':')[1];
+          parts.push({
+            inline_data: {
+              mime_type: mimeType,
+              data: base64Data
+            }
+          });
+        }
+        return {
+          role: m.role === 'user' ? 'user' : 'model',
+          parts
+        };
+      });
+
+      // Create abort controller
+      currentAbortController = new AbortController();
+      const btnSend = $('#btnSend');
+      const originalSendHTML = btnSend.innerHTML;
+      btnSend.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" fill="currentColor"/></svg><span class="btn-label">중지</span>';
+      btnSend.onclick = () => {
+        if (currentAbortController) currentAbortController.abort();
+      };
 
       setStatus('응답 생성 중...');
-      $('#btnSend').disabled = true;
 
       try {
         await streamGemini({
           model: $('#selModel').value || Store.getModel(),
           contents,
+          abortSignal: currentAbortController.signal,
           onDelta: (piece) => {
             renderer.appendChunk(piece);
             area.scrollTop = area.scrollHeight;
@@ -1143,19 +1576,186 @@
             const idx = sess2.messages.findIndex(m => m.id === aiMsg.id);
             if (idx >= 0) { sess2.messages[idx].content = aiMsg.content; sess2.updatedAt = nowIso(); saveSession(sess2); }
             setStatus('');
-            $('#btnSend').disabled = false;
+            btnSend.innerHTML = originalSendHTML;
+            btnSend.onclick = sendMessage;
+            currentAbortController = null;
             area.scrollTop = area.scrollHeight;
           },
           onError: (err) => {
             setStatus('');
-            $('#btnSend').disabled = false;
+            btnSend.innerHTML = originalSendHTML;
+            btnSend.onclick = sendMessage;
+            currentAbortController = null;
             showToast('API 오류: ' + (err?.message || '알 수 없음'));
           }
         });
       } catch (e) {
+        if (e.name === 'AbortError') {
+          showToast('응답 생성이 중지되었습니다.');
+          // Remove incomplete AI message
+          const sess2 = currentSession();
+          sess2.messages = sess2.messages.filter(m => m.id !== aiMsg.id);
+          saveSession(sess2);
+          renderChat();
+        } else {
+          showToast('요청 실패: ' + (e?.message || '네트워크'));
+        }
         setStatus('');
-        $('#btnSend').disabled = false;
-        showToast('요청 실패: ' + (e?.message || '네트워크'));
+        btnSend.innerHTML = originalSendHTML;
+        btnSend.onclick = sendMessage;
+        currentAbortController = null;
+      }
+    }
+            aiMsg.content = renderer.getRaw();
+            const sess2 = currentSession();
+            const idx = sess2.messages.findIndex(m => m.id === aiMsg.id);
+            if (idx >= 0) { sess2.messages[idx].content = aiMsg.content; sess2.updatedAt = nowIso(); saveSession(sess2); }
+            setStatus('');
+            $('#btnSend').disabled = false;
+            area.scrollTop = area.scrollHeight;
+          }
+        });
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          showToast('응답 생성이 중지되었습니다.');
+          // Remove incomplete AI message
+          const sess2 = currentSession();
+          sess2.messages = sess2.messages.filter(m => m.id !== aiMsg.id);
+          saveSession(sess2);
+          renderChat();
+        } else {
+          showToast('요청 실패: ' + (e?.message || '네트워크'));
+        }
+        setStatus('');
+        btnSend.innerHTML = originalSendHTML;
+        btnSend.onclick = sendMessage;
+        currentAbortController = null;
+      }
+    }
+
+    /*********************
+     * Image Handling    *
+     *********************/
+    function attachImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        attachedImage = e.target.result;
+        showImagePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function showImagePreview() {
+      const container = $('#imagePreviewContainer');
+      container.classList.remove('hidden');
+      container.innerHTML = `
+        <div class="img-preview-container">
+          <img src="${attachedImage}" class="max-h-24 rounded-lg" alt="첨부 이미지" />
+          <button class="img-preview-remove" onclick="clearAttachedImage()">✕</button>
+        </div>
+      `;
+    }
+
+    function clearAttachedImage() {
+      attachedImage = null;
+      $('#imagePreviewContainer').classList.add('hidden');
+      $('#imagePreviewContainer').innerHTML = '';
+      $('#fileImage').value = '';
+    }
+
+    /*********************
+     * Voice Input       *
+     *********************/
+    function startVoiceInput() {
+      if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+        showToast('음성 인식을 지원하지 않는 브라우저입니다.');
+        return;
+      }
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ko-KR';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        $('#composer').value = transcript;
+        autoResizeTextarea();
+        showToast('음성 입력 완료');
+      };
+      
+      recognition.onerror = (event) => {
+        showToast('음성 인식 오류: ' + event.error);
+      };
+      
+      recognition.start();
+      showToast('음성 입력 중...');
+    }
+
+    /************************
+     * Formatting Toolbar   *
+     ************************/
+    function applyFormat(prefix, suffix = '') {
+      const ta = $('#composer');
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const text = ta.value;
+      const selectedText = text.substring(start, end);
+      
+      if (selectedText) {
+        const newText = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end);
+        ta.value = newText;
+        ta.selectionStart = start + prefix.length;
+        ta.selectionEnd = end + prefix.length;
+      } else {
+        const newText = text.substring(0, start) + prefix + suffix + text.substring(end);
+        ta.value = newText;
+        ta.selectionStart = ta.selectionEnd = start + prefix.length;
+      }
+      ta.focus();
+      autoResizeTextarea();
+    }
+
+    /*************************
+     * Conversation Summary  *
+     *************************/
+    async function summarizeConversation() {
+      const sess = currentSession();
+      if (!sess || sess.messages.length === 0) {
+        showToast('대화 내용이 없습니다.');
+        return;
+      }
+      
+      const conversationText = sess.messages.map(m => 
+        `${m.role === 'user' ? '사용자' : 'AI'}: ${m.content}`
+      ).join('\n\n');
+      
+      const summaryPrompt = `다음 대화를 3-5줄로 간결하게 요약해주세요:\n\n${conversationText}`;
+      
+      try {
+        setStatus('요약 생성 중...');
+        const key = Store.getKey();
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(Store.getModel())}:generateContent?key=${encodeURIComponent(key)}`;
+        
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: summaryPrompt }] }]
+          })
+        });
+        
+        if (!res.ok) throw new Error('요약 실패');
+        
+        const data = await res.json();
+        const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || '요약을 생성할 수 없습니다.';
+        
+        setStatus('');
+        alert('📝 대화 요약\n\n' + summary);
+      } catch (e) {
+        setStatus('');
+        showToast('요약 생성 실패: ' + e.message);
       }
     }
 
@@ -1201,6 +1801,9 @@
       // Theme
       $('#btnTheme').addEventListener('click', () => { toggleTheme(); addCopyButtonsScoped(document); });
 
+      // Summary
+      $('#btnSummary').addEventListener('click', summarizeConversation);
+
       // Export menu
       const exp = $('#btnExport');
       const menu = $('#exportMenu');
@@ -1233,6 +1836,31 @@
         if (ok) { $('#bannerNoKey').classList.add('hidden'); }
       });
 
+      // Advanced API parameters
+      $('#sliderTemp').value = Store.getTemperature();
+      $('#tempValue').textContent = Store.getTemperature();
+      $('#sliderTemp').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        $('#tempValue').textContent = val;
+        Store.setTemperature(val);
+      });
+
+      $('#sliderTopP').value = Store.getTopP();
+      $('#topPValue').textContent = Store.getTopP();
+      $('#sliderTopP').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        $('#topPValue').textContent = val;
+        Store.setTopP(val);
+      });
+
+      $('#sliderTopK').value = Store.getTopK();
+      $('#topKValue').textContent = Store.getTopK();
+      $('#sliderTopK').addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        $('#topKValue').textContent = val;
+        Store.setTopK(val);
+      });
+
       // Model
       $('#selModel').value = Store.getModel();
       $('#selModel').addEventListener('change', (e) => {
@@ -1248,6 +1876,12 @@
       $('#btnSaveCharacter').addEventListener('click', saveCharacterFromForm);
       $('#btnNewCharacter').addEventListener('click', newCharacter);
       $('#btnDeleteCharacter').addEventListener('click', deleteCharacter);
+      $('#btnExportChar').addEventListener('click', exportCharacter);
+      $('#btnImportChar').addEventListener('click', () => $('#fileImportChar').click());
+      $('#fileImportChar').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) importCharacter(file);
+      });
       $('#inpAvatar').addEventListener('change', async (e) => {
         const f = e.target.files?.[0];
         if (!f) return;
@@ -1266,6 +1900,25 @@
       // Sessions
       $('#btnNewChat').addEventListener('click', () => newSession('새 대화'));
       $('#btnDeleteChat').addEventListener('click', deleteCurrentSession);
+      $('#searchSessions').addEventListener('input', (e) => {
+        renderSessionsList(e.target.value);
+      });
+
+      // Formatting toolbar
+      $('#btnBold').addEventListener('click', () => applyFormat('**', '**'));
+      $('#btnItalic').addEventListener('click', () => applyFormat('*', '*'));
+      $('#btnCode').addEventListener('click', () => applyFormat('`', '`'));
+      $('#btnList').addEventListener('click', () => applyFormat('- '));
+
+      // Image upload
+      $('#btnImage').addEventListener('click', () => $('#fileImage').click());
+      $('#fileImage').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) attachImage(file);
+      });
+
+      // Voice input
+      $('#btnVoice').addEventListener('click', startVoiceInput);
 
       // Composer
       $('#composer').addEventListener('input', autoResizeTextarea);
