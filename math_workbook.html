@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>중학 수학 1000제</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-hover: #22222f;
+            --text-primary: #f0f0f5;
+            --text-secondary: #9090a0;
+            --text-muted: #606070;
+            --accent-1: #6366f1;
+            --accent-2: #8b5cf6;
+            --accent-3: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --border: rgba(255,255,255,0.08);
+            --glow: rgba(99,102,241,0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.7; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-1); border-radius: 3px; }
+        
+        .header { position: fixed; top: 0; left: 0; right: 0; height: 64px; background: rgba(10,10,15,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; }
+        .logo-text { font-weight: 700; font-size: 1.1rem; background: linear-gradient(135deg, var(--text-primary), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header-stats { display: flex; gap: 16px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--accent-1); }
+        .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .main-content { padding-top: 64px; min-height: 100vh; }
+        .grade-tabs { display: flex; justify-content: center; gap: 6px; padding: 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); position: sticky; top: 64px; z-index: 100; }
+        .grade-tab { padding: 10px 24px; border: none; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.95rem; font-weight: 500; cursor: pointer; border-radius: 10px; transition: all 0.3s; position: relative; }
+        .grade-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .grade-tab.active { color: white; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); }
+        .grade-tab .badge { position: absolute; top: -4px; right: -4px; background: var(--accent-3); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 8px; font-weight: 600; }
+        
+        .content-area { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+        .semester-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; }
+        .semester-btn { padding: 8px 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font-family: inherit; font-size: 0.85rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .semester-btn:hover { border-color: var(--accent-1); color: var(--text-primary); }
+        .semester-btn.active { background: var(--accent-1); border-color: var(--accent-1); color: white; }
+        
+        .units-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .unit-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: all 0.3s; cursor: pointer; }
+        .unit-card:hover { transform: translateY(-3px); border-color: var(--accent-1); box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 24px var(--glow); }
+        .unit-header { padding: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05)); border-bottom: 1px solid var(--border); }
+        .unit-number { font-size: 0.7rem; color: var(--accent-1); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+        .unit-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+        .unit-progress { display: flex; align-items: center; gap: 8px; }
+        .progress-bar { flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--success), var(--accent-1)); border-radius: 2px; transition: width 0.5s; }
+        .progress-text { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
+        .unit-body { padding: 12px 16px; }
+        .unit-topics { display: flex; flex-wrap: wrap; gap: 5px; }
+        .topic-tag { padding: 3px 8px; background: var(--bg-hover); border-radius: 5px; font-size: 0.75rem; color: var(--text-secondary); }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; display: none; }
+        .modal-overlay.active { display: block; }
+        .modal { position: fixed; inset: 0; background: var(--bg-primary); z-index: 2001; display: none; flex-direction: column; }
+        .modal.active { display: flex; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+        .modal-title { font-size: 1rem; font-weight: 600; }
+        .modal-close { width: 36px; height: 36px; border: none; background: var(--bg-hover); color: var(--text-primary); border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .modal-close:hover { background: var(--error); }
+        .modal-body { flex: 1; overflow-y: auto; padding: 16px; }
+        
+        .modal-tabs { display: flex; gap: 4px; background: var(--bg-card); padding: 5px; border-radius: 10px; margin-bottom: 20px; }
+        .modal-tab { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.85rem; font-weight: 500; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+        .modal-tab:hover { color: var(--text-primary); }
+        .modal-tab.active { background: var(--accent-1); color: white; }
+        
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .concept-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+        .concept-header { padding: 14px 16px; background: linear-gradient(135deg, rgba(99,102,241,0.08), transparent); cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background 0.2s; }
+        .concept-header:hover { background: rgba(99,102,241,0.12); }
+        .concept-title { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .concept-icon { width: 26px; height: 26px; background: var(--accent-1); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+        .concept-toggle { color: var(--text-muted); transition: transform 0.3s; font-size: 0.8rem; }
+        .concept-block.open .concept-toggle { transform: rotate(180deg); }
+        .concept-content { max-height: 0; overflow: hidden; transition: max-height 0.4s; }
+        .concept-block.open .concept-content { max-height: 2000px; }
+        .concept-inner { padding: 16px; border-top: 1px solid var(--border); }
+        .concept-inner p { margin-bottom: 10px; color: var(--text-secondary); font-size: 0.95rem; }
+        .formula-box { background: var(--bg-hover); border-left: 3px solid var(--accent-1); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: var(--accent-2); white-space: pre-wrap; }
+        .example-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 12px; margin: 12px 0; }
+        .example-label { font-size: 0.7rem; font-weight: 600; color: var(--success); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        
+        .problem-filters { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 14px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font-family: inherit; font-size: 0.8rem; cursor: pointer; border-radius: 16px; transition: all 0.2s; }
+        .filter-btn:hover { border-color: var(--accent-1); color: var(--text-primary); }
+        .filter-btn.active { background: var(--accent-1); border-color: var(--accent-1); color: white; }
+        
+        .quick-nav { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 16px; padding: 12px; background: var(--bg-card); border-radius: 10px; }
+        .quick-nav-btn { aspect-ratio: 1; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+        .quick-nav-btn:hover { border-color: var(--accent-1); color: var(--text-primary); }
+        .quick-nav-btn.current { background: var(--accent-1); border-color: var(--accent-1); color: white; }
+        .quick-nav-btn.solved { background: var(--success); border-color: var(--success); color: white; }
+        .quick-nav-btn.wrong { background: var(--error); border-color: var(--error); color: white; }
+        
+        .problem-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 12px; transition: all 0.3s; }
+        .problem-card:hover { border-color: var(--accent-1); }
+        .problem-card.solved { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
+        .problem-card.wrong { border-color: var(--error); background: rgba(239, 68, 68, 0.05); }
+        .problem-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .problem-number { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); background: var(--bg-hover); padding: 3px 8px; border-radius: 5px; }
+        .problem-difficulty { font-size: 0.7rem; padding: 3px 8px; border-radius: 5px; font-weight: 600; }
+        .difficulty-easy { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .difficulty-medium { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .difficulty-hard { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+        .problem-text { font-size: 1.05rem; line-height: 1.8; margin-bottom: 16px; white-space: pre-wrap; }
+        
+        .problem-choices { display: grid; gap: 8px; margin-bottom: 16px; }
+        .choice-btn { padding: 12px 16px; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-primary); font-family: inherit; font-size: 0.95rem; cursor: pointer; border-radius: 10px; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+        .choice-btn:hover:not(:disabled) { border-color: var(--accent-1); background: rgba(99,102,241,0.1); }
+        .choice-btn.correct { border-color: var(--success); background: rgba(16, 185, 129, 0.15); }
+        .choice-btn.incorrect { border-color: var(--error); background: rgba(239, 68, 68, 0.15); }
+        .choice-number { width: 24px; height: 24px; border-radius: 6px; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; }
+        
+        .answer-input-group { display: flex; gap: 10px; margin-bottom: 16px; }
+        .answer-input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 1rem; border-radius: 10px; outline: none; transition: all 0.2s; }
+        .answer-input:focus { border-color: var(--accent-1); box-shadow: 0 0 16px var(--glow); }
+        .submit-btn { padding: 12px 24px; border: none; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: white; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; border-radius: 10px; transition: all 0.3s; }
+        .submit-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px var(--glow); }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .solution-box { background: var(--bg-hover); border-radius: 10px; padding: 16px; margin-top: 12px; display: none; }
+        .solution-box.show { display: block; animation: fadeIn 0.3s; }
+        .solution-label { font-size: 0.75rem; font-weight: 600; color: var(--accent-1); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .solution-text { color: var(--text-secondary); line-height: 1.8; white-space: pre-wrap; font-size: 0.95rem; }
+        
+        .problem-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .nav-btn { padding: 10px 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-btn:hover:not(:disabled) { border-color: var(--accent-1); background: var(--bg-hover); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .problem-indicator { font-family: 'JetBrains Mono', monospace; color: var(--text-muted); font-size: 0.85rem; }
+        
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg-card); border: 1px solid var(--border); padding: 14px 20px; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 3000; opacity: 0; transition: all 0.3s; font-size: 0.9rem; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+        
+        @media (max-width: 768px) {
+            .header-stats { display: none; }
+            .grade-tab { padding: 8px 16px; font-size: 0.85rem; }
+            .units-grid { grid-template-columns: 1fr; }
+            .quick-nav { grid-template-columns: repeat(5, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">M</div>
+            <span class="logo-text">중학 수학 1000제</span>
+        </div>
+        <div class="header-stats">
+            <div class="stat-item"><div class="stat-value" id="totalSolved">0</div><div class="stat-label">완료</div></div>
+            <div class="stat-item"><div class="stat-value" id="accuracy">0%</div><div class="stat-label">정답률</div></div>
+            <div class="stat-item"><div class="stat-value" id="streak">0</div><div class="stat-label">연속</div></div>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <div class="grade-tabs">
+            <button class="grade-tab active" data-grade="1">중학교 1학년<span class="badge" id="g1-badge">0%</span></button>
+            <button class="grade-tab" data-grade="2">중학교 2학년<span class="badge" id="g2-badge">0%</span></button>
+            <button class="grade-tab" data-grade="3">중학교 3학년<span class="badge" id="g3-badge">0%</span></button>
+        </div>
+        <div class="content-area">
+            <div class="semester-selector">
+                <button class="semester-btn active" data-semester="1">1학기</button>
+                <button class="semester-btn" data-semester="2">2학기</button>
+            </div>
+            <div class="units-grid" id="unitsGrid"></div>
+        </div>
+    </main>
+    
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal" id="modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">단원명</h2>
+            <button class="modal-close" id="modalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-tab="concept">개념 정리</button>
+                <button class="modal-tab" data-tab="problems">문제 풀기</button>
+            </div>
+            <div class="section active" id="conceptSection"></div>
+            <div class="section" id="problemsSection">
+                <div class="problem-filters" id="problemFilters">
+                    <button class="filter-btn active" data-filter="all">전체</button>
+                    <button class="filter-btn" data-filter="easy">기본</button>
+                    <button class="filter-btn" data-filter="medium">표준</button>
+                    <button class="filter-btn" data-filter="hard">심화</button>
+                    <button class="filter-btn" data-filter="unsolved">미완료</button>
+                </div>
+                <div class="quick-nav" id="quickNav"></div>
+                <div id="problemContainer"></div>
+                <div class="problem-nav">
+                    <button class="nav-btn" id="prevBtn">◀ 이전</button>
+                    <span class="problem-indicator" id="problemIndicator">1 / 50</span>
+                    <button class="nav-btn" id="nextBtn">다음 ▶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+<script>
+// Seeded Random
+class Rng{constructor(s){this.s=s}next(){this.s=(this.s*1103515245+12345)&0x7fffffff;return this.s/0x7fffffff}int(a,b){return Math.floor(this.next()*(b-a+1))+a}shuffle(arr){const r=[...arr];for(let i=r.length-1;i>0;i--){const j=Math.floor(this.next()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r}}
+
+// Math helpers
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a};
+const lcm=(a,b)=>(a*b)/gcd(a,b);
+const pf=n=>{const f={};let d=2;while(d*d<=n){while(n%d===0){f[d]=(f[d]||0)+1;n/=d}d++}if(n>1)f[n]=(f[n]||0)+1;return Object.entries(f).map(([p,e])=>e>1?`${p}^${e}`:p).join('×')||'1'};
+const sf=(n,d)=>{const g=gcd(n,d);return d/g===1?`${n/g}`:`${n/g}/${d/g}`};
+
+// Curriculum Data
+const curriculum = {
+    1: {
+        1: [
+            {id:'g1s1u1',title:'소인수분해',topics:['거듭제곱','소수','소인수분해','최대공약수','최소공배수'],problemCount:50,
+             concepts:[{title:'거듭제곱',icon:'×',content:'<p>같은 수를 여러 번 곱한 것</p><div class="formula-box">aⁿ = a × a × ... × a (n개)</div><div class="example-box"><div class="example-label">예시</div>2³ = 8, 5² = 25</div>'},{title:'소수와 합성수',icon:'P',content:'<p><b>소수</b>: 약수가 1과 자신뿐인 수 (2,3,5,7,11...)</p><p><b>합성수</b>: 약수가 3개 이상인 수</p><div class="formula-box">1은 소수도 합성수도 아님</div>'},{title:'소인수분해',icon:'÷',content:'<p>자연수를 소수들의 곱으로 나타내기</p><div class="formula-box">60 = 2² × 3 × 5</div>'},{title:'최대공약수/최소공배수',icon:'G',content:'<p><b>GCD</b>: 공통 소인수, 작은 지수</p><p><b>LCM</b>: 모든 소인수, 큰 지수</p><div class="formula-box">GCD(12,18)=6, LCM(12,18)=36</div>'}]},
+            {id:'g1s1u2',title:'정수와 유리수',topics:['정수','유리수','절댓값','사칙연산'],problemCount:50,
+             concepts:[{title:'정수와 유리수',icon:'Z',content:'<p><b>정수</b>: ...,-2,-1,0,1,2,...</p><p><b>유리수</b>: 분수로 나타낼 수 있는 수</p>'},{title:'절댓값',icon:'||',content:'<p>원점에서의 거리</p><div class="formula-box">|5| = 5, |-5| = 5</div>'},{title:'사칙연산',icon:'±',content:'<p>부호가 같으면 +, 다르면 -</p><div class="formula-box">(-3)×(-5)=+15<br>(-3)×(+5)=-15</div>'}]},
+            {id:'g1s1u3',title:'문자와 식',topics:['문자의 사용','일차식','일차방정식'],problemCount:60,
+             concepts:[{title:'문자의 사용',icon:'x',content:'<p>모르는 수를 문자로 표현</p><div class="formula-box">2×x → 2x, x÷3 → x/3</div>'},{title:'일차방정식',icon:'=',content:'<p>ax + b = 0 형태의 방정식</p><div class="formula-box">이항: 부호가 바뀜<br>3x+5=14 → 3x=9 → x=3</div>'}]},
+            {id:'g1s1u4',title:'좌표평면과 그래프',topics:['좌표평면','사분면','정비례','반비례'],problemCount:45,
+             concepts:[{title:'좌표평면',icon:'⊕',content:'<p>순서쌍 (x,y)로 점의 위치 표현</p><div class="formula-box">제1사분면(+,+), 제2(−,+)<br>제3(−,−), 제4(+,−)</div>'},{title:'정비례/반비례',icon:'∝',content:'<p><b>정비례</b>: y = ax (원점 지나는 직선)</p><p><b>반비례</b>: y = a/x (쌍곡선)</p>'}]}
+        ],
+        2: [
+            {id:'g1s2u1',title:'기본 도형',topics:['점,선,면','각','평행선','동위각','엇각'],problemCount:40,
+             concepts:[{title:'평행선과 각',icon:'∠',content:'<p><b>맞꼭지각</b>: 크기가 같음</p><p><b>동위각/엇각</b>: 평행선에서 크기 같음</p><div class="formula-box">평행 ⟺ 동위각 같음 ⟺ 엇각 같음</div>'}]},
+            {id:'g1s2u2',title:'평면도형',topics:['다각형','내각','외각','원','부채꼴'],problemCount:45,
+             concepts:[{title:'다각형',icon:'⬡',content:'<div class="formula-box">내각의 합 = (n-2)×180°<br>외각의 합 = 360°<br>대각선 = n(n-3)/2</div>'},{title:'원과 부채꼴',icon:'◐',content:'<div class="formula-box">원둘레 = 2πr, 넓이 = πr²<br>부채꼴 호 = 2πr×(θ/360°)</div>'}]},
+            {id:'g1s2u3',title:'입체도형',topics:['다면체','회전체','겉넓이','부피'],problemCount:45,
+             concepts:[{title:'부피 공식',icon:'V',content:'<div class="formula-box">기둥: 밑넓이×높이<br>뿔: (1/3)×밑넓이×높이<br>구: (4/3)πr³</div>'}]},
+            {id:'g1s2u4',title:'통계',topics:['도수분포표','히스토그램','상대도수'],problemCount:35,
+             concepts:[{title:'상대도수',icon:'%',content:'<div class="formula-box">상대도수 = 계급도수/전체도수<br>상대도수의 합 = 1</div>'}]}
+        ]
+    },
+    2: {
+        1: [
+            {id:'g2s1u1',title:'유리수와 순환소수',topics:['유한소수','무한소수','순환소수'],problemCount:40,
+             concepts:[{title:'순환소수',icon:'○',content:'<p>소수점 아래 숫자가 반복되는 무한소수</p><div class="formula-box">0.333... = 1/3<br>분모에 2,5외 소인수 → 무한소수</div>'}]},
+            {id:'g2s1u2',title:'식의 계산',topics:['지수법칙','단항식','다항식'],problemCount:50,
+             concepts:[{title:'지수법칙',icon:'ⁿ',content:'<div class="formula-box">aᵐ×aⁿ = aᵐ⁺ⁿ<br>aᵐ÷aⁿ = aᵐ⁻ⁿ<br>(aᵐ)ⁿ = aᵐⁿ</div>'}]},
+            {id:'g2s1u3',title:'일차부등식',topics:['부등식','일차부등식','활용'],problemCount:45,
+             concepts:[{title:'부등식',icon:'<',content:'<p>음수로 곱/나누면 부등호 방향 바뀜!</p><div class="formula-box">-2x > 6 → x < -3</div>'}]},
+            {id:'g2s1u4',title:'연립일차방정식',topics:['가감법','대입법','활용'],problemCount:55,
+             concepts:[{title:'풀이법',icon:'{}',content:'<p><b>가감법</b>: 더하거나 빼서 소거</p><p><b>대입법</b>: 한 식을 다른 식에 대입</p>'}]},
+            {id:'g2s1u5',title:'일차함수',topics:['기울기','y절편','그래프'],problemCount:55,
+             concepts:[{title:'일차함수',icon:'/',content:'<div class="formula-box">y = ax + b<br>a: 기울기, b: y절편<br>기울기 = (y₂-y₁)/(x₂-x₁)</div>'}]}
+        ],
+        2: [
+            {id:'g2s2u1',title:'삼각형의 성질',topics:['이등변삼각형','합동조건','외심','내심'],problemCount:50,
+             concepts:[{title:'합동조건',icon:'≡',content:'<div class="formula-box">SSS, SAS, ASA<br>직각삼각형: RHS, RHA</div>'},{title:'외심/내심',icon:'⊙',content:'<p><b>외심</b>: 수직이등분선 교점</p><p><b>내심</b>: 각의 이등분선 교점</p>'}]},
+            {id:'g2s2u2',title:'사각형의 성질',topics:['평행사변형','직사각형','마름모','정사각형'],problemCount:45,
+             concepts:[{title:'평행사변형',icon:'▱',content:'<div class="formula-box">대변 평행, 대변/대각 같음<br>대각선이 서로 이등분</div>'}]},
+            {id:'g2s2u3',title:'도형의 닮음',topics:['닮음비','닮음조건','무게중심'],problemCount:50,
+             concepts:[{title:'닮음',icon:'∼',content:'<div class="formula-box">닮음비 m:n이면<br>넓이비 = m²:n²<br>부피비 = m³:n³</div>'},{title:'무게중심',icon:'G',content:'<div class="formula-box">세 중선의 교점<br>꼭짓점에서 2:1로 나눔</div>'}]},
+            {id:'g2s2u4',title:'피타고라스 정리',topics:['피타고라스 정리','역','활용'],problemCount:45,
+             concepts:[{title:'피타고라스',icon:'c²',content:'<div class="formula-box">a² + b² = c² (빗변)<br>3,4,5 / 5,12,13 / 8,15,17</div>'}]},
+            {id:'g2s2u5',title:'확률',topics:['경우의 수','합/곱의 법칙','확률'],problemCount:45,
+             concepts:[{title:'확률',icon:'P',content:'<div class="formula-box">확률 = 해당 경우/전체 경우<br>0 ≤ P ≤ 1</div>'}]}
+        ]
+    },
+    3: {
+        1: [
+            {id:'g3s1u1',title:'실수와 그 연산',topics:['제곱근','무리수','실수','유리화'],problemCount:50,
+             concepts:[{title:'제곱근',icon:'√',content:'<div class="formula-box">√a: a의 양의 제곱근<br>(√a)² = a, √(a²) = |a|</div>'},{title:'유리화',icon:'×√',content:'<div class="formula-box">1/√a = √a/a<br>√a×√b = √(ab)</div>'}]},
+            {id:'g3s1u2',title:'다항식의 곱셈과 인수분해',topics:['곱셈공식','인수분해'],problemCount:55,
+             concepts:[{title:'곱셈공식',icon:'²',content:'<div class="formula-box">(a+b)² = a²+2ab+b²<br>(a-b)² = a²-2ab+b²<br>(a+b)(a-b) = a²-b²</div>'},{title:'인수분해',icon:'()',content:'<div class="formula-box">a²±2ab+b² = (a±b)²<br>a²-b² = (a+b)(a-b)<br>x²+(a+b)x+ab = (x+a)(x+b)</div>'}]},
+            {id:'g3s1u3',title:'이차방정식',topics:['인수분해','제곱근','근의공식'],problemCount:55,
+             concepts:[{title:'풀이법',icon:'x²',content:'<div class="formula-box">인수분해: (x-a)(x-b)=0<br>제곱근: (x-p)²=q<br>근의공식: x=(-b±√(b²-4ac))/2a</div>'},{title:'판별식',icon:'D',content:'<div class="formula-box">D = b²-4ac<br>D>0: 서로 다른 두 근<br>D=0: 중근<br>D<0: 실근 없음</div>'}]},
+            {id:'g3s1u4',title:'이차함수',topics:['y=ax²','평행이동','꼭짓점','최대/최소'],problemCount:55,
+             concepts:[{title:'이차함수',icon:'∪',content:'<div class="formula-box">y = a(x-p)² + q<br>꼭짓점: (p,q), 축: x=p<br>a>0: 아래볼록, 최솟값 q<br>a<0: 위볼록, 최댓값 q</div>'}]}
+        ],
+        2: [
+            {id:'g3s2u1',title:'삼각비',topics:['sin','cos','tan','특수각','활용'],problemCount:50,
+             concepts:[{title:'삼각비',icon:'θ',content:'<div class="formula-box">sin = 대변/빗변<br>cos = 인접변/빗변<br>tan = 대변/인접변</div>'},{title:'특수각',icon:'30°',content:'<div class="formula-box">sin30°=1/2, cos30°=√3/2<br>sin45°=cos45°=√2/2<br>sin60°=√3/2, cos60°=1/2</div>'}]},
+            {id:'g3s2u2',title:'원의 성질',topics:['현','접선','원주각','중심각'],problemCount:50,
+             concepts:[{title:'원주각',icon:'∠',content:'<div class="formula-box">원주각 = 중심각/2<br>같은 호 → 원주각 같음<br>반원 → 원주각 90°</div>'}]},
+            {id:'g3s2u3',title:'통계',topics:['대푯값','분산','표준편차','상관관계'],problemCount:45,
+             concepts:[{title:'산포도',icon:'σ',content:'<div class="formula-box">분산 = Σ(편차²)/n<br>표준편차 = √분산</div>'},{title:'상관관계',icon:'↗',content:'<div class="formula-box">양의 상관: x↑ → y↑<br>음의 상관: x↑ → y↓</div>'}]}
+        ]
+    }
+};
+
+// Problem Generators
+const gen = {
+    'g1s1u1': [
+        (r,i)=>{const b=r.int(2,9),e=r.int(2,4),a=Math.pow(b,e);return{type:'input',diff:'easy',text:`${b}의 ${e}제곱의 값은?`,ans:a+'',sol:`${b}^${e} = ${a}`}},
+        (r,i)=>{const nums=[12,18,24,30,36,40,48,60,72,84];const n=nums[r.int(0,nums.length-1)];return{type:'input',diff:'medium',text:`${n}을 소인수분해하시오. (예: 2^2×3)`,ans:pf(n),sol:`${n} = ${pf(n)}`}},
+        (r,i)=>{const pairs=[[12,18],[24,36],[20,30],[15,25],[18,24]];const[a,b]=pairs[r.int(0,pairs.length-1)];const g=gcd(a,b);return{type:'input',diff:'medium',text:`${a}과 ${b}의 최대공약수는?`,ans:g+'',sol:`GCD(${a},${b}) = ${g}`}},
+        (r,i)=>{const pairs=[[4,6],[6,9],[8,12],[10,15]];const[a,b]=pairs[r.int(0,pairs.length-1)];const l=lcm(a,b);return{type:'input',diff:'medium',text:`${a}과 ${b}의 최소공배수는?`,ans:l+'',sol:`LCM(${a},${b}) = ${l}`}}
+    ],
+    'g1s1u2': [
+        (r,i)=>{const a=r.int(-12,12),b=r.int(-12,12);return{type:'input',diff:'easy',text:`(${a}) + (${b}) = ?`,ans:(a+b)+'',sol:`${a}+${b}=${a+b}`}},
+        (r,i)=>{const a=r.int(-10,10),b=r.int(-10,10);if(a===0||b===0)return gen['g1s1u2'][1](r,i);return{type:'input',diff:'easy',text:`(${a}) × (${b}) = ?`,ans:(a*b)+'',sol:`부호가 ${(a>0)===(b>0)?'같으면 +':'다르면 -'}: ${a*b}`}},
+        (r,i)=>{const a=r.int(-15,15);return{type:'input',diff:'easy',text:`|${a}|의 값은?`,ans:Math.abs(a)+'',sol:`|${a}| = ${Math.abs(a)}`}}
+    ],
+    'g1s1u3': [
+        (r,i)=>{const a=r.int(2,8),b=r.int(1,12);const x=b/a;if(!Number.isInteger(x))return gen['g1s1u3'][0](r,i+1);return{type:'input',diff:'easy',text:`${a}x = ${b}일 때 x는?`,ans:x+'',sol:`x = ${b}÷${a} = ${x}`}},
+        (r,i)=>{const a=r.int(2,5),b=r.int(1,8),c=r.int(5,20);const x=(c-b)/a;if(!Number.isInteger(x)||x<0)return gen['g1s1u3'][1](r,i+1);return{type:'input',diff:'medium',text:`${a}x + ${b} = ${c}일 때 x는?`,ans:x+'',sol:`${a}x=${c-b}, x=${x}`}},
+        (r,i)=>{const c1=r.int(2,6),c2=r.int(2,6);return{type:'input',diff:'easy',text:`${c1}x + ${c2}x를 계산하면? (예: 5x)`,ans:`${c1+c2}x`,sol:`${c1}x+${c2}x=${c1+c2}x`}}
+    ],
+    'g1s1u4': [
+        (r,i)=>{const a=r.int(2,6),x=r.int(1,5);return{type:'input',diff:'easy',text:`y=${a}x에서 x=${x}일 때 y는?`,ans:(a*x)+'',sol:`y=${a}×${x}=${a*x}`}},
+        (r,i)=>{const a=r.int(6,30),x=r.int(2,5);if(a%x!==0)return gen['g1s1u4'][1](r,i+1);return{type:'input',diff:'medium',text:`y=${a}/x에서 x=${x}일 때 y는?`,ans:(a/x)+'',sol:`y=${a}/${x}=${a/x}`}},
+        (r,i)=>{const x=r.int(-4,4),y=r.int(-4,4);if(x===0||y===0)return gen['g1s1u4'][2](r,i+1);const q=x>0&&y>0?1:x<0&&y>0?2:x<0&&y<0?3:4;return{type:'input',diff:'easy',text:`점 (${x},${y})는 제 몇 사분면? (숫자만)`,ans:q+'',sol:`(${x>0?'+':'-'},${y>0?'+':'-'}) → 제${q}사분면`}}
+    ],
+    'g1s2u1': [
+        (r,i)=>{const a=r.int(30,150);return{type:'input',diff:'easy',text:`맞꼭지각이 ${a}°일 때 반대편 맞꼭지각은?`,ans:a+'',sol:`맞꼭지각은 같다: ${a}°`}},
+        (r,i)=>{const a=r.int(40,140);return{type:'input',diff:'easy',text:`평행선에서 동위각이 ${a}°일 때 엇각은?`,ans:a+'',sol:`평행선에서 동위각=엇각: ${a}°`}}
+    ],
+    'g1s2u2': [
+        (r,i)=>{const n=r.int(5,8);const a=(n-2)*180;return{type:'input',diff:'easy',text:`${n}각형의 내각의 합은? (도)`,ans:a+'',sol:`(${n}-2)×180=${a}°`}},
+        (r,i)=>{const rd=r.int(2,8);return{type:'input',diff:'easy',text:`반지름 ${rd}cm인 원의 둘레는? (π 사용)`,ans:`${2*rd}π`,sol:`2π×${rd}=${2*rd}π cm`}},
+        (r,i)=>{const n=r.int(4,8);const d=n*(n-3)/2;return{type:'input',diff:'medium',text:`${n}각형의 대각선 개수는?`,ans:d+'',sol:`${n}(${n}-3)/2=${d}`}}
+    ],
+    'g1s2u3': [
+        (r,i)=>{const rd=r.int(2,5),h=r.int(3,8);return{type:'input',diff:'medium',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원기둥 부피는? (π 사용)`,ans:`${rd*rd*h}π`,sol:`π×${rd}²×${h}=${rd*rd*h}π cm³`}},
+        (r,i)=>{const rd=r.int(3,6),h=r.int(3,9);const v=(rd*rd*h);if(v%3!==0)return gen['g1s2u3'][1](r,i+1);return{type:'input',diff:'hard',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원뿔 부피는? (π 사용)`,ans:`${v/3}π`,sol:`(1/3)×π×${rd}²×${h}=${v/3}π cm³`}}
+    ],
+    'g1s2u4': [
+        (r,i)=>{const vals=[70,80,90,85,75];const m=80;return{type:'input',diff:'easy',text:`자료 ${vals.join(', ')}의 평균은?`,ans:m+'',sol:`(${vals.join('+')})/5=${m}`}},
+        (r,i)=>{const tot=r.int(2,5)*10,freq=r.int(4,tot/2);const rd=freq/tot;return{type:'input',diff:'medium',text:`전체도수 ${tot}, 계급도수 ${freq}일 때 상대도수는?`,ans:rd+'',sol:`${freq}/${tot}=${rd}`}}
+    ],
+    'g2s1u1': [
+        (r,i)=>{const rep=r.int(1,9);const g=gcd(rep,9);return{type:'input',diff:'medium',text:`0.${rep}${rep}${rep}...을 분수로 (기약분수)`,ans:sf(rep,9),sol:`x=0.${rep}..., 9x=${rep}, x=${sf(rep,9)}`}}
+    ],
+    'g2s1u2': [
+        (r,i)=>{const b=r.int(2,4),m=r.int(2,4),n=r.int(2,4);return{type:'input',diff:'easy',text:`${b}^${m} × ${b}^${n} = ? (예: 2^5)`,ans:`${b}^${m+n}`,sol:`${b}^${m}×${b}^${n}=${b}^${m+n}`}},
+        (r,i)=>{const b=r.int(2,4),m=r.int(2,3),n=r.int(2,3);return{type:'input',diff:'medium',text:`(${b}^${m})^${n} = ? (예: 2^6)`,ans:`${b}^${m*n}`,sol:`(${b}^${m})^${n}=${b}^${m*n}`}}
+    ],
+    'g2s1u3': [
+        (r,i)=>{const a=r.int(2,5),b=r.int(6,20);const x=b/a;if(!Number.isInteger(x))return gen['g2s1u3'][0](r,i+1);return{type:'input',diff:'easy',text:`${a}x < ${b}의 해는? (예: x<5)`,ans:`x<${x}`,sol:`x<${b}/${a}=${x}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(6,15);const x=b/a;if(!Number.isInteger(x))return gen['g2s1u3'][1](r,i+1);return{type:'input',diff:'medium',text:`-${a}x < ${b}의 해는?`,ans:`x>-${x}`,sol:`음수로 나누면 부등호 반대! x>-${x}`}}
+    ],
+    'g2s1u4': [
+        (r,i)=>{const x=r.int(2,5),y=r.int(1,4);const s=x+y,d=x-y;if(d<=0)return gen['g2s1u4'][0](r,i+1);return{type:'input',diff:'medium',text:`x+y=${s}, x-y=${d}일 때 (x,y)는? (예: 3,2)`,ans:`${x},${y}`,sol:`더하면 2x=${s+d}, x=${x}, y=${y}`}}
+    ],
+    'g2s1u5': [
+        (r,i)=>{const a=r.int(1,4),b=r.int(-4,4);return{type:'input',diff:'easy',text:`y=${a}x${b>=0?'+':''}${b}의 기울기는?`,ans:a+'',sol:`y=ax+b에서 기울기=a=${a}`}},
+        (r,i)=>{const a=r.int(1,4),b=r.int(-5,5);return{type:'input',diff:'easy',text:`y=${a}x${b>=0?'+':''}${b}의 y절편은?`,ans:b+'',sol:`y=ax+b에서 y절편=b=${b}`}}
+    ],
+    'g2s2u1': [
+        (r,i)=>{const v=r.int(40,100);if((180-v)%2!==0)return gen['g2s2u1'][0](r,i+1);const b=(180-v)/2;return{type:'input',diff:'easy',text:`이등변삼각형 꼭지각이 ${v}°일 때 밑각은?`,ans:b+'',sol:`(180-${v})/2=${b}°`}}
+    ],
+    'g2s2u2': [
+        (r,i)=>{const a=r.int(50,130);return{type:'input',diff:'easy',text:`평행사변형의 한 각이 ${a}°일 때 이웃한 각은?`,ans:(180-a)+'',sol:`180-${a}=${180-a}°`}}
+    ],
+    'g2s2u3': [
+        (r,i)=>{const m=r.int(2,4),n=1;return{type:'input',diff:'medium',text:`닮음비 ${m}:${n}일 때 넓이비는? (예: 4:1)`,ans:`${m*m}:${n*n}`,sol:`넓이비=닮음비²=${m*m}:${n*n}`}}
+    ],
+    'g2s2u4': [
+        (r,i)=>{const trips=[[3,4,5],[5,12,13],[6,8,10],[8,15,17]];const[a,b,c]=trips[r.int(0,trips.length-1)];return{type:'input',diff:'easy',text:`직각삼각형에서 두 변이 ${a}, ${b}일 때 빗변은?`,ans:c+'',sol:`${a}²+${b}²=${a*a+b*b}=${c}²`}}
+    ],
+    'g2s2u5': [
+        (r,i)=>{const a=r.int(3,6),b=r.int(2,5);return{type:'input',diff:'easy',text:`셔츠 ${a}벌, 바지 ${b}벌일 때 경우의 수는?`,ans:(a*b)+'',sol:`곱의법칙: ${a}×${b}=${a*b}`}},
+        (r,i)=>{return{type:'input',diff:'medium',text:`주사위에서 짝수가 나올 확률은? (기약분수)`,ans:'1/2',sol:`짝수: 2,4,6 → 3/6=1/2`}}
+    ],
+    'g3s1u1': [
+        (r,i)=>{const sq=[4,9,16,25,36,49,64,81];const n=sq[r.int(0,sq.length-1)];return{type:'input',diff:'easy',text:`√${n}의 값은?`,ans:Math.sqrt(n)+'',sol:`√${n}=${Math.sqrt(n)}`}},
+        (r,i)=>{const a=r.int(2,8);return{type:'input',diff:'easy',text:`(√${a})²의 값은?`,ans:a+'',sol:`(√a)²=a → ${a}`}},
+        (r,i)=>{const a=r.int(2,5),b=r.int(2,5);return{type:'input',diff:'medium',text:`√${a}×√${b}를 간단히 (예: √6)`,ans:`√${a*b}`,sol:`√${a}×√${b}=√${a*b}`}}
+    ],
+    'g3s1u2': [
+        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'easy',text:`(x+${a})²을 전개 (예: x^2+6x+9)`,ans:`x^2+${2*a}x+${a*a}`,sol:`x²+${2*a}x+${a*a}`}},
+        (r,i)=>{const a=r.int(2,6);return{type:'input',diff:'easy',text:`(x+${a})(x-${a})를 전개 (예: x^2-9)`,ans:`x^2-${a*a}`,sol:`x²-${a*a}`}},
+        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'medium',text:`x²-${a*a}을 인수분해`,ans:`(x+${a})(x-${a})`,sol:`x²-${a}²=(x+${a})(x-${a})`}}
+    ],
+    'g3s1u3': [
+        (r,i)=>{const a=r.int(1,5),b=r.int(1,5);if(a===b)return gen['g3s1u3'][0](r,i+1);return{type:'input',diff:'medium',text:`x²+${a+b}x+${a*b}=0의 해는? (작은 수부터)`,ans:`-${Math.max(a,b)},-${Math.min(a,b)}`,sol:`(x+${a})(x+${b})=0 → x=-${a},-${b}`}},
+        (r,i)=>{const a=r.int(2,6);return{type:'input',diff:'easy',text:`x²=${a*a}의 해는? (예: -3,3)`,ans:`-${a},${a}`,sol:`x=±${a}`}}
+    ],
+    'g3s1u4': [
+        (r,i)=>{const a=r.int(1,3)*(r.next()>0.5?1:-1);const shape=a>0?'아래로 볼록':'위로 볼록';return{type:'choice',diff:'easy',text:`y=${a}x²의 모양은?`,choices:['아래로 볼록','위로 볼록'],ans:a>0?0:1,sol:`a=${a}${a>0?'>0':'<0'} → ${shape}`}},
+        (r,i)=>{const p=r.int(-3,3),q=r.int(-4,4);return{type:'input',diff:'medium',text:`y=2(x-${p})²+${q}의 꼭짓점은? (예: 2,3)`,ans:`${p},${q}`,sol:`꼭짓점: (${p},${q})`}}
+    ],
+    'g3s2u1': [
+        (r,i)=>{const angs=[{d:30,s:'1/2',c:'√3/2',t:'√3/3'},{d:45,s:'√2/2',c:'√2/2',t:'1'},{d:60,s:'√3/2',c:'1/2',t:'√3'}];const a=angs[r.int(0,2)];const f=['sin','cos','tan'][r.int(0,2)];const v=f==='sin'?a.s:f==='cos'?a.c:a.t;return{type:'input',diff:'easy',text:`${f} ${a.d}°의 값은?`,ans:v,sol:`${f} ${a.d}°=${v}`}}
+    ],
+    'g3s2u2': [
+        (r,i)=>{const c=r.int(40,160);if(c%2!==0)return gen['g3s2u2'][0](r,i+1);return{type:'input',diff:'easy',text:`중심각이 ${c}°일 때 원주각은?`,ans:(c/2)+'',sol:`원주각=중심각/2=${c/2}°`}},
+        (r,i)=>{return{type:'input',diff:'easy',text:`반원에 대한 원주각은?`,ans:'90',sol:`반원 중심각=180°, 원주각=90°`}}
+    ],
+    'g3s2u3': [
+        (r,i)=>{const vals=[2,4,6,8,10];return{type:'input',diff:'medium',text:`자료 2,4,6,8,10의 분산은?`,ans:'8',sol:`평균=6, 편차²합=40, 분산=8`}},
+        (r,i)=>{const v=[4,9,16,25][r.int(0,3)];return{type:'input',diff:'easy',text:`분산이 ${v}이면 표준편차는?`,ans:Math.sqrt(v)+'',sol:`√${v}=${Math.sqrt(v)}`}}
+    ]
+};
+
+// State
+const state={grade:1,semester:1,unit:null,probIdx:0,filter:'all',problems:[],progress:{},stats:{total:0,correct:0,streak:0}};
+
+function load(){const d=localStorage.getItem('mwb');if(d){const p=JSON.parse(d);state.progress=p.progress||{};state.stats=p.stats||{total:0,correct:0,streak:0}}updateStats();updateBadges()}
+function save(){localStorage.setItem('mwb',JSON.stringify({progress:state.progress,stats:state.stats}));updateStats();updateBadges()}
+function updateStats(){document.getElementById('totalSolved').textContent=state.stats.total;const acc=state.stats.total>0?Math.round(state.stats.correct/state.stats.total*100):0;document.getElementById('accuracy').textContent=acc+'%';document.getElementById('streak').textContent=state.stats.streak}
+function updateBadges(){[1,2,3].forEach(g=>{const units=[...(curriculum[g][1]||[]),...(curriculum[g][2]||[])];let t=0,s=0;units.forEach(u=>{t+=u.problemCount;const up=state.progress[u.id]||{};s+=Object.keys(up).filter(k=>up[k]).length});document.getElementById(`g${g}-badge`).textContent=Math.round(s/t*100)+'%'})}
+
+function renderUnits(){const grid=document.getElementById('unitsGrid');const units=curriculum[state.grade][state.semester]||[];grid.innerHTML=units.map((u,i)=>{const up=state.progress[u.id]||{};const solved=Object.keys(up).filter(k=>up[k]).length;const pct=Math.round(solved/u.problemCount*100);return`<div class="unit-card" onclick="openUnit('${u.id}')"><div class="unit-header"><div class="unit-number">단원 ${i+1}</div><div class="unit-title">${u.title}</div><div class="unit-progress"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><span class="progress-text">${solved}/${u.problemCount}</span></div></div><div class="unit-body"><div class="unit-topics">${u.topics.map(t=>`<span class="topic-tag">${t}</span>`).join('')}</div></div></div>`}).join('')}
+
+function openUnit(id){const all=Object.values(curriculum).flatMap(g=>Object.values(g).flat());state.unit=all.find(u=>u.id===id);if(!state.unit)return;genProblems();state.probIdx=0;state.filter='all';document.getElementById('modalTitle').textContent=state.unit.title;renderConcepts();renderProblem();updateNav();document.getElementById('modal').classList.add('active');document.getElementById('modalOverlay').classList.add('active');document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));document.querySelector('.modal-tab[data-tab="concept"]').classList.add('active');document.getElementById('conceptSection').classList.add('active');document.getElementById('problemsSection').classList.remove('active')}
+function closeModal(){document.getElementById('modal').classList.remove('active');document.getElementById('modalOverlay').classList.remove('active')}
+
+function renderConcepts(){const sec=document.getElementById('conceptSection');if(!state.unit)return;sec.innerHTML=(state.unit.concepts||[]).map((c,i)=>`<div class="concept-block ${i===0?'open':''}" onclick="this.classList.toggle('open')"><div class="concept-header"><div class="concept-title"><span class="concept-icon">${c.icon}</span>${c.title}</div><span class="concept-toggle">▼</span></div><div class="concept-content"><div class="concept-inner">${c.content}</div></div></div>`).join('')}
+
+function genProblems(){if(!state.unit)return;const id=state.unit.id;const gs=gen[id]||[];const cnt=state.unit.problemCount;state.problems=[];const rng=new Rng(id.split('').reduce((a,c)=>a+c.charCodeAt(0),0));for(let i=0;i<cnt;i++){const g=gs[i%gs.length];if(g){const p=g(rng,i);p.id=`${id}_${i}`;if(!p.diff)p.diff=['easy','medium','hard'][i%3];state.problems.push(p)}}}
+
+function getFiltered(){if(state.filter==='all')return state.problems;if(state.filter==='unsolved')return state.problems.filter((p,i)=>{const pr=state.progress[state.unit.id]||{};return!pr[i]});return state.problems.filter(p=>p.diff===state.filter)}
+
+function renderProblem(){const cont=document.getElementById('problemContainer');const filt=getFiltered();if(!filt.length){cont.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">해당 조건의 문제가 없습니다</div>';return}const realIdx=state.problems.indexOf(filt[state.probIdx]);const p=filt[state.probIdx];const pr=state.progress[state.unit.id]||{};const status=pr[realIdx];const dc={easy:'difficulty-easy',medium:'difficulty-medium',hard:'difficulty-hard'}[p.diff];const dl={easy:'기본',medium:'표준',hard:'심화'}[p.diff];let sc='';if(status==='correct')sc='solved';else if(status==='wrong')sc='wrong';cont.innerHTML=`<div class="problem-card ${sc}"><div class="problem-meta"><span class="problem-number">문제 ${realIdx+1}</span><span class="problem-difficulty ${dc}">${dl}</span></div><div class="problem-text">${p.text}</div>${p.type==='choice'?renderChoices(p,status):renderInput(p,status)}<div class="solution-box ${status?'show':''}" id="solBox"><div class="solution-label">💡 풀이</div><div class="solution-text">${p.sol}</div></div></div>`;updateProbNav()}
+
+function renderChoices(p,status){return`<div class="problem-choices">${p.choices.map((c,i)=>{let cls='choice-btn';if(status){if(i===p.ans)cls+=' correct';else if(status==='wrong')cls+=' incorrect'}return`<button class="${cls}" onclick="submitChoice(${i})" ${status?'disabled':''}><span class="choice-number">${i+1}</span>${c}</button>`}).join('')}</div>`}
+function renderInput(p,status){return`<div class="answer-input-group"><input type="text" class="answer-input" id="ansIn" placeholder="정답 입력" ${status?'disabled':''} value="${status?p.ans:''}" onkeypress="if(event.key==='Enter')submitAns()"><button class="submit-btn" onclick="submitAns()" ${status?'disabled':''}>제출</button></div>`}
+
+function submitChoice(i){const f=getFiltered();const p=f[state.probIdx];const ri=state.problems.indexOf(p);record(ri,i===p.ans);renderProblem()}
+function submitAns(){const inp=document.getElementById('ansIn');if(!inp||!inp.value.trim())return;const f=getFiltered();const p=f[state.probIdx];const ri=state.problems.indexOf(p);const ua=inp.value.trim().replace(/\s/g,'');const ca=p.ans.replace(/\s/g,'');record(ri,ua===ca);renderProblem()}
+
+function record(idx,correct){if(!state.progress[state.unit.id])state.progress[state.unit.id]={};const was=state.progress[state.unit.id][idx];state.progress[state.unit.id][idx]=correct?'correct':'wrong';if(!was){state.stats.total++;if(correct){state.stats.correct++;state.stats.streak++;toast('정답입니다! 🎉','success')}else{state.stats.streak=0;toast('오답입니다','error')}}save();updateNav()}
+
+function updateNav(){const nav=document.getElementById('quickNav');const f=getFiltered();nav.innerHTML=f.slice(0,30).map((p,i)=>{const ri=state.problems.indexOf(p);const pr=state.progress[state.unit.id]||{};const st=pr[ri];let c='quick-nav-btn';if(i===state.probIdx)c+=' current';else if(st==='correct')c+=' solved';else if(st==='wrong')c+=' wrong';return`<button class="${c}" onclick="goTo(${i})">${ri+1}</button>`}).join('')}
+function updateProbNav(){const f=getFiltered();document.getElementById('problemIndicator').textContent=`${state.probIdx+1} / ${f.length}`;document.getElementById('prevBtn').disabled=state.probIdx===0;document.getElementById('nextBtn').disabled=state.probIdx>=f.length-1}
+
+function goTo(i){state.probIdx=i;renderProblem();updateNav()}
+function prev(){if(state.probIdx>0){state.probIdx--;renderProblem();updateNav()}}
+function next(){const f=getFiltered();if(state.probIdx<f.length-1){state.probIdx++;renderProblem();updateNav()}}
+function setFilter(f){state.filter=f;state.probIdx=0;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));renderProblem();updateNav()}
+
+function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),2000)}
+
+document.addEventListener('DOMContentLoaded',()=>{load();renderUnits();
+document.querySelectorAll('.grade-tab').forEach(t=>t.addEventListener('click',()=>{state.grade=+t.dataset.grade;document.querySelectorAll('.grade-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');state.semester=1;document.querySelectorAll('.semester-btn').forEach(b=>b.classList.toggle('active',b.dataset.semester==='1'));renderUnits()}));
+document.querySelectorAll('.semester-btn').forEach(b=>b.addEventListener('click',()=>{state.semester=+b.dataset.semester;document.querySelectorAll('.semester-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderUnits()}));
+document.querySelectorAll('.modal-tab').forEach(t=>t.addEventListener('click',()=>{const n=t.dataset.tab;document.querySelectorAll('.modal-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById('conceptSection').classList.toggle('active',n==='concept');document.getElementById('problemsSection').classList.toggle('active',n==='problems')}));
+document.querySelectorAll('.filter-btn').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.filter)));
+document.getElementById('modalClose').addEventListener('click',closeModal);
+document.getElementById('modalOverlay').addEventListener('click',closeModal);
+document.getElementById('prevBtn').addEventListener('click',prev);
+document.getElementById('nextBtn').addEventListener('click',next);
+document.addEventListener('keydown',e=>{if(!document.getElementById('modal').classList.contains('active'))return;if(document.activeElement.tagName==='INPUT')return;if(e.key==='ArrowLeft')prev();else if(e.key==='ArrowRight')next();else if(e.key==='Escape')closeModal()})});
+</script>
+</body>
+</html>
