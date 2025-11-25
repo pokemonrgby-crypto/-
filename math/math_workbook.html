@@ -230,6 +230,7 @@ const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a};
 const lcm=(a,b)=>(a*b)/gcd(a,b);
 const pf=n=>{const f={};let d=2;while(d*d<=n){while(n%d===0){f[d]=(f[d]||0)+1;n/=d}d++}if(n>1)f[n]=(f[n]||0)+1;return Object.entries(f).map(([p,e])=>e>1?`${p}^${e}`:p).join('×')||'1'};
 const sf=(n,d)=>{const g=gcd(n,d);return d/g===1?`${n/g}`:`${n/g}/${d/g}`};
+const SQRT3=1.73; // √3 approximation for calculations
 
 // Curriculum Data
 const curriculum = {
@@ -319,18 +320,18 @@ const gen = {
         (r,i)=>{const a=r.int(-12,12),b=r.int(-12,12);return{type:'input',diff:'easy',text:`(${a}) + (${b}) = ?`,ans:(a+b)+'',sol:`${a}+${b}=${a+b}`}},
         (r,i)=>{const a=r.int(-10,10),b=r.int(-10,10);if(a===0||b===0)return gen['g1s1u2'][1](r,i);return{type:'input',diff:'easy',text:`(${a}) × (${b}) = ?`,ans:(a*b)+'',sol:`부호가 ${(a>0)===(b>0)?'같으면 +':'다르면 -'}: ${a*b}`}},
         (r,i)=>{const a=r.int(-15,15);return{type:'input',diff:'easy',text:`|${a}|의 값은?`,ans:Math.abs(a)+'',sol:`|${a}| = ${Math.abs(a)}`}},
-        (r,i)=>{const a=r.int(-8,-2),b=r.int(-6,-1),c=r.int(2,8);return{type:'input',diff:'medium',text:`(${a}) × (${b}) ÷ (${c}) = ?`,ans:((a*b)/c%1===0?(a*b)/c+'':sf(a*b,c)),sol:`${a}×${b}÷${c}=${(a*b)/c}`}},
+        (r,i)=>{const cases=[[(-6),(-4),8],[(-8),(-3),6],[(-4),(-6),8],[(-6),(-2),4]];const[a,b,c]=cases[r.int(0,cases.length-1)];const result=(a*b)/c;return{type:'input',diff:'medium',text:`(${a}) × (${b}) ÷ (${c}) = ?`,ans:result+'',sol:`${a}×${b}÷${c}=${result}`}},
         (r,i)=>{const a=r.int(-5,-2),b=r.int(2,4);return{type:'input',diff:'hard',text:`(${a})³ × (${b})² = ?`,ans:(Math.pow(a,3)*Math.pow(b,2))+'',sol:`(${a})³×(${b})² = ${Math.pow(a,3)}×${Math.pow(b,2)} = ${Math.pow(a,3)*Math.pow(b,2)}`}},
-        (r,i)=>{const a=r.int(-10,10),b=r.int(-10,10);if(a===b)return gen['g1s1u2'][5](r,i+1);return{type:'input',diff:'hard',text:`|${a}| - |${b}| + |${a}-${b}| = ?`,ans:(Math.abs(a)-Math.abs(b)+Math.abs(a-b))+'',sol:`|${a}|-|${b}|+|${a-b}| = ${Math.abs(a)}-${Math.abs(b)}+${Math.abs(a-b)} = ${Math.abs(a)-Math.abs(b)+Math.abs(a-b)}`}},
+        (r,i)=>{const a=r.int(-10,10),b=r.int(-10,10);if(a===b){const na=a+1,nb=b-1;return{type:'input',diff:'hard',text:`|${na}| - |${nb}| + |${na}-${nb}| = ?`,ans:(Math.abs(na)-Math.abs(nb)+Math.abs(na-nb))+'',sol:`|${na}|-|${nb}|+|${na-nb}| = ${Math.abs(na)}-${Math.abs(nb)}+${Math.abs(na-nb)} = ${Math.abs(na)-Math.abs(nb)+Math.abs(na-nb)}`}}return{type:'input',diff:'hard',text:`|${a}| - |${b}| + |${a}-${b}| = ?`,ans:(Math.abs(a)-Math.abs(b)+Math.abs(a-b))+'',sol:`|${a}|-|${b}|+|${a-b}| = ${Math.abs(a)}-${Math.abs(b)}+${Math.abs(a-b)} = ${Math.abs(a)-Math.abs(b)+Math.abs(a-b)}`}},
         (r,i)=>{const a=r.int(-6,-2),b=r.int(-5,-1),c=r.int(-4,-1);return{type:'input',diff:'hard',text:`(${a}) + (${b}) - (${c}) = ?`,ans:(a+b-c)+'',sol:`${a}+${b}-${c} = ${a+b-c}`}}
     ],
     'g1s1u3': [
         (r,i)=>{const a=r.int(2,8),b=r.int(1,12);const x=b/a;if(!Number.isInteger(x))return gen['g1s1u3'][0](r,i+1);return{type:'input',diff:'easy',text:`${a}x = ${b}일 때 x는?`,ans:x+'',sol:`x = ${b}÷${a} = ${x}`}},
         (r,i)=>{const a=r.int(2,5),b=r.int(1,8),c=r.int(5,20);const x=(c-b)/a;if(!Number.isInteger(x)||x<0)return gen['g1s1u3'][1](r,i+1);return{type:'input',diff:'medium',text:`${a}x + ${b} = ${c}일 때 x는?`,ans:x+'',sol:`${a}x=${c-b}, x=${x}`}},
         (r,i)=>{const c1=r.int(2,6),c2=r.int(2,6);return{type:'input',diff:'easy',text:`${c1}x + ${c2}x를 계산하면? (예: 5x)`,ans:`${c1+c2}x`,sol:`${c1}x+${c2}x=${c1+c2}x`}},
-        (r,i)=>{const a=r.int(2,4),b=r.int(3,6),c=r.int(2,5),d=r.int(1,10);const x=(d+b*c)/(a+b);if(!Number.isInteger(x)||x<=0)return gen['g1s1u3'][3](r,i+1);return{type:'input',diff:'hard',text:`${a}x - ${b*c} = ${b}x - ${d}일 때 x는?`,ans:x+'',sol:`${a}x-${b}x = ${b*c}-${d}, ${a-b}x=${b*c-d}, x=${x}`}},
-        (r,i)=>{const x=r.int(2,6),a=r.int(2,4),b=r.int(1,5);const left=a*x+b,right=x+b;const k=(left-right);return{type:'input',diff:'hard',text:`${a}(x+${Math.floor(b/a)||1}) = ${left}일 때 x는?`,ans:x+'',sol:`${a}x+${a*(Math.floor(b/a)||1)}=${left}, ${a}x=${left-a*(Math.floor(b/a)||1)}, x=${x}`}},
-        (r,i)=>{const a=r.int(2,5),b=r.int(1,8),c=r.int(2,4),d=r.int(3,12);const x=(d-b)/(a-c);if(!Number.isInteger(x)||x<=0||a===c)return gen['g1s1u3'][5](r,i+1);return{type:'input',diff:'hard',text:`${a}x + ${b} = ${c}x + ${d}일 때 x는?`,ans:x+'',sol:`${a}x-${c}x = ${d}-${b}, ${a-c}x=${d-b}, x=${x}`}}
+        (r,i)=>{const cases=[[4,5,2,3,5],[3,4,2,6,4],[5,3,3,4,2],[4,6,2,8,3]];const[a,b,c,d,x]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`${a}x - ${b*c} = -${b}x + ${d}일 때 x는?`,ans:x+'',sol:`${a}x+${b}x = ${b*c}+${d}, ${a+b}x=${b*c+d}, x=${x}`}},
+        (r,i)=>{const cases=[[3,1,8,2],[4,2,10,2],[5,1,12,2],[2,1,6,2]];const[a,b,c,x]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`${a}(x+${b}) = ${c}일 때 x는?`,ans:x+'',sol:`${a}x+${a*b}=${c}, ${a}x=${c-a*b}, x=${x}`}},
+        (r,i)=>{const cases=[[4,2,3,8,2],[5,3,2,7,2],[3,1,2,4,1],[6,2,4,6,2]];const[a,b,c,d,x]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`${a}x + ${b} = ${c}x + ${d}일 때 x는?`,ans:x+'',sol:`${a}x-${c}x = ${d}-${b}, ${a-c}x=${d-b}, x=${x}`}}
     ],
     'g1s1u4': [
         (r,i)=>{const a=r.int(2,6),x=r.int(1,5);return{type:'input',diff:'easy',text:`y=${a}x에서 x=${x}일 때 y는?`,ans:(a*x)+'',sol:`y=${a}×${x}=${a*x}`}},
@@ -363,9 +364,9 @@ const gen = {
         (r,i)=>{const rd=r.int(2,5),h=r.int(3,8);return{type:'input',diff:'medium',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원기둥 부피는? (π 사용)`,ans:`${rd*rd*h}π`,sol:`π×${rd}²×${h}=${rd*rd*h}π cm³`}},
         (r,i)=>{const rd=r.int(3,6),h=r.int(3,9);const v=(rd*rd*h);if(v%3!==0)return gen['g1s2u3'][1](r,i+1);return{type:'input',diff:'hard',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원뿔 부피는? (π 사용)`,ans:`${v/3}π`,sol:`(1/3)×π×${rd}²×${h}=${v/3}π cm³`}},
         (r,i)=>{const a=r.int(2,5),b=r.int(3,6),h=r.int(2,5);return{type:'input',diff:'easy',text:`밑면이 ${a}cm×${b}cm이고 높이가 ${h}cm인 직육면체 부피는?`,ans:(a*b*h)+'',sol:`${a}×${b}×${h}=${a*b*h} cm³`}},
-        (r,i)=>{const rd=[3,6];const r1=rd[r.int(0,1)];const v=(4*r1*r1*r1)/3;if(v%1!==0)return gen['g1s2u3'][3](r,i+1);return{type:'input',diff:'hard',text:`반지름 ${r1}cm인 구의 부피는? (π 사용)`,ans:`${v}π`,sol:`(4/3)×π×${r1}³=${v}π cm³`}},
+        (r,i)=>{const r1=[3,6][r.int(0,1)];const v=(4*r1*r1*r1)/3;return{type:'input',diff:'hard',text:`반지름 ${r1}cm인 구의 부피는? (π 사용)`,ans:`${v}π`,sol:`(4/3)×π×${r1}³=${v}π cm³`}},
         (r,i)=>{const rd=r.int(2,4),h=r.int(3,6);const sa=2*rd*rd+2*rd*h;return{type:'input',diff:'hard',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원기둥 겉넓이는? (π 사용)`,ans:`${sa}π`,sol:`2π×${rd}²+2π×${rd}×${h}=${sa}π cm²`}},
-        (r,i)=>{const a=r.int(3,6),h=r.int(4,8);const v=(a*a*h)/3;if(v%1!==0)return gen['g1s2u3'][5](r,i+1);return{type:'input',diff:'hard',text:`밑면이 한 변 ${a}cm인 정사각형이고 높이가 ${h}cm인 사각뿔 부피는?`,ans:v+'',sol:`(1/3)×${a}²×${h}=${v} cm³`}}
+        (r,i)=>{const cases=[[3,6,18],[6,6,72],[3,9,27],[6,3,36]];const[a,h,v]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`밑면이 한 변 ${a}cm인 정사각형이고 높이가 ${h}cm인 사각뿔 부피는?`,ans:v+'',sol:`(1/3)×${a}²×${h}=${v} cm³`}}
     ],
     'g1s2u4': [
         (r,i)=>{const vals=[70,80,90,85,75];const m=80;return{type:'input',diff:'easy',text:`자료 ${vals.join(', ')}의 평균은?`,ans:m+'',sol:`(${vals.join('+')})/5=${m}`}},
@@ -439,7 +440,7 @@ const gen = {
         (r,i)=>{const trips=[[3,4,5],[5,12,13],[6,8,10],[8,15,17]];const[a,b,c]=trips[r.int(0,trips.length-1)];return{type:'input',diff:'easy',text:`직각삼각형에서 두 변이 ${a}, ${b}일 때 빗변은?`,ans:c+'',sol:`${a}²+${b}²=${a*a+b*b}=${c}²`}},
         (r,i)=>{const trips=[[3,4,5],[5,12,13],[6,8,10]];const[a,b,c]=trips[r.int(0,trips.length-1)];return{type:'input',diff:'medium',text:`직각삼각형에서 빗변이 ${c}이고 한 변이 ${a}일 때 다른 한 변은?`,ans:b+'',sol:`${c}²-${a}²=${c*c-a*a}=${b}²`}},
         (r,i)=>{const a=r.int(3,6);return{type:'input',diff:'hard',text:`가로 ${a}cm, 세로 ${a}cm인 정사각형의 대각선 길이는? (√ 사용)`,ans:`${a}√2`,sol:`√(${a}²+${a}²)=√${2*a*a}=${a}√2cm`}},
-        (r,i)=>{const h=r.int(4,8);return{type:'input',diff:'hard',text:`높이가 ${h}cm인 정삼각형의 한 변의 길이는? (소수점 첫째자리, √3≈1.73)`,ans:(h*2/1.73).toFixed(1),sol:`a=2h/√3≈${(h*2/1.73).toFixed(1)}cm`}},
+        (r,i)=>{const h=r.int(4,8);return{type:'input',diff:'hard',text:`높이가 ${h}cm인 정삼각형의 한 변의 길이는? (소수점 첫째자리, √3≈${SQRT3})`,ans:(h*2/SQRT3).toFixed(1),sol:`a=2h/√3≈${(h*2/SQRT3).toFixed(1)}cm`}},
         (r,i)=>{const a=r.int(2,5),b=r.int(3,6),c=r.int(4,7);const sq=a*a+b*b;const csq=c*c;return{type:'choice',diff:'hard',text:`세 변이 ${a}, ${b}, ${c}인 삼각형은?`,choices:['예각삼각형','직각삼각형','둔각삼각형'],ans:sq>csq?0:(sq===csq?1:2),sol:`${a}²+${b}²=${sq}, ${c}²=${csq} → ${sq>csq?'예각':sq===csq?'직각':'둔각'}`}}
     ],
     'g2s2u5': [
