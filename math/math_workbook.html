@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>중학 수학 1000제</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-primary: #0a0a0f;
@@ -25,7 +24,7 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { font-size: 16px; scroll-behavior: smooth; }
-        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.7; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-secondary); }
         ::-webkit-scrollbar-thumb { background: var(--accent-1); border-radius: 3px; }
@@ -36,7 +35,7 @@
         .logo-text { font-weight: 700; font-size: 1.1rem; background: linear-gradient(135deg, var(--text-primary), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .header-stats { display: flex; gap: 16px; }
         .stat-item { text-align: center; }
-        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--accent-1); }
+        .stat-value { font-family: monospace; font-size: 1rem; font-weight: 600; color: var(--accent-1); }
         .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
         
         .main-content { padding-top: 64px; min-height: 100vh; }
@@ -61,7 +60,7 @@
         .unit-progress { display: flex; align-items: center; gap: 8px; }
         .progress-bar { flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--success), var(--accent-1)); border-radius: 2px; transition: width 0.5s; }
-        .progress-text { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
+        .progress-text { font-family: monospace; font-size: 0.7rem; color: var(--text-muted); }
         .unit-body { padding: 12px 16px; }
         .unit-topics { display: flex; flex-wrap: wrap; gap: 5px; }
         .topic-tag { padding: 3px 8px; background: var(--bg-hover); border-radius: 5px; font-size: 0.75rem; color: var(--text-secondary); }
@@ -96,7 +95,7 @@
         .concept-block.open .concept-content { max-height: 2000px; }
         .concept-inner { padding: 16px; border-top: 1px solid var(--border); }
         .concept-inner p { margin-bottom: 10px; color: var(--text-secondary); font-size: 0.95rem; }
-        .formula-box { background: var(--bg-hover); border-left: 3px solid var(--accent-1); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: var(--accent-2); white-space: pre-wrap; }
+        .formula-box { background: var(--bg-hover); border-left: 3px solid var(--accent-1); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 12px 0; font-family: monospace; font-size: 1rem; color: var(--accent-2); white-space: pre-wrap; }
         .example-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 12px; margin: 12px 0; }
         .example-label { font-size: 0.7rem; font-weight: 600; color: var(--success); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
         
@@ -106,7 +105,7 @@
         .filter-btn.active { background: var(--accent-1); border-color: var(--accent-1); color: white; }
         
         .quick-nav { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 16px; padding: 12px; background: var(--bg-card); border-radius: 10px; }
-        .quick-nav-btn { aspect-ratio: 1; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+        .quick-nav-btn { aspect-ratio: 1; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-secondary); font-family: monospace; font-size: 0.7rem; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
         .quick-nav-btn:hover { border-color: var(--accent-1); color: var(--text-primary); }
         .quick-nav-btn.current { background: var(--accent-1); border-color: var(--accent-1); color: white; }
         .quick-nav-btn.solved { background: var(--success); border-color: var(--success); color: white; }
@@ -117,7 +116,7 @@
         .problem-card.solved { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
         .problem-card.wrong { border-color: var(--error); background: rgba(239, 68, 68, 0.05); }
         .problem-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-        .problem-number { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); background: var(--bg-hover); padding: 3px 8px; border-radius: 5px; }
+        .problem-number { font-family: monospace; font-size: 0.75rem; color: var(--text-muted); background: var(--bg-hover); padding: 3px 8px; border-radius: 5px; }
         .problem-difficulty { font-size: 0.7rem; padding: 3px 8px; border-radius: 5px; font-weight: 600; }
         .difficulty-easy { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         .difficulty-medium { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
@@ -132,7 +131,7 @@
         .choice-number { width: 24px; height: 24px; border-radius: 6px; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; }
         
         .answer-input-group { display: flex; gap: 10px; margin-bottom: 16px; }
-        .answer-input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 1rem; border-radius: 10px; outline: none; transition: all 0.2s; }
+        .answer-input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-primary); font-family: monospace; font-size: 1rem; border-radius: 10px; outline: none; transition: all 0.2s; }
         .answer-input:focus { border-color: var(--accent-1); box-shadow: 0 0 16px var(--glow); }
         .submit-btn { padding: 12px 24px; border: none; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: white; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; border-radius: 10px; transition: all 0.3s; }
         .submit-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px var(--glow); }
@@ -147,7 +146,7 @@
         .nav-btn { padding: 10px 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
         .nav-btn:hover:not(:disabled) { border-color: var(--accent-1); background: var(--bg-hover); }
         .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .problem-indicator { font-family: 'JetBrains Mono', monospace; color: var(--text-muted); font-size: 0.85rem; }
+        .problem-indicator { font-family: monospace; color: var(--text-muted); font-size: 0.85rem; }
         
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg-card); border: 1px solid var(--border); padding: 14px 20px; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 3000; opacity: 0; transition: all 0.3s; font-size: 0.9rem; }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -412,8 +411,8 @@ const gen = {
 // State
 const state={grade:1,semester:1,unit:null,probIdx:0,filter:'all',problems:[],progress:{},stats:{total:0,correct:0,streak:0}};
 
-function load(){const d=localStorage.getItem('mwb');if(d){const p=JSON.parse(d);state.progress=p.progress||{};state.stats=p.stats||{total:0,correct:0,streak:0}}updateStats();updateBadges()}
-function save(){localStorage.setItem('mwb',JSON.stringify({progress:state.progress,stats:state.stats}));updateStats();updateBadges()}
+function load(){try{const d=localStorage.getItem('mwb');if(d){const p=JSON.parse(d);state.progress=p.progress||{};state.stats=p.stats||{total:0,correct:0,streak:0}}}catch(e){}updateStats();updateBadges()}
+function save(){try{localStorage.setItem('mwb',JSON.stringify({progress:state.progress,stats:state.stats}))}catch(e){}updateStats();updateBadges()}
 function updateStats(){document.getElementById('totalSolved').textContent=state.stats.total;const acc=state.stats.total>0?Math.round(state.stats.correct/state.stats.total*100):0;document.getElementById('accuracy').textContent=acc+'%';document.getElementById('streak').textContent=state.stats.streak}
 function updateBadges(){[1,2,3].forEach(g=>{const units=[...(curriculum[g][1]||[]),...(curriculum[g][2]||[])];let t=0,s=0;units.forEach(u=>{t+=u.problemCount;const up=state.progress[u.id]||{};s+=Object.keys(up).filter(k=>up[k]).length});document.getElementById(`g${g}-badge`).textContent=Math.round(s/t*100)+'%'})}
 
