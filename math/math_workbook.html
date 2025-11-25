@@ -24,7 +24,7 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { font-size: 16px; scroll-behavior: smooth; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.7; }
+        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.7; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-secondary); }
         ::-webkit-scrollbar-thumb { background: var(--accent-1); border-radius: 3px; }
@@ -411,8 +411,8 @@ const gen = {
 // State
 const state={grade:1,semester:1,unit:null,probIdx:0,filter:'all',problems:[],progress:{},stats:{total:0,correct:0,streak:0}};
 
-function load(){try{const d=localStorage.getItem('mwb');if(d){const p=JSON.parse(d);state.progress=p.progress||{};state.stats=p.stats||{total:0,correct:0,streak:0}}}catch(e){}updateStats();updateBadges()}
-function save(){try{localStorage.setItem('mwb',JSON.stringify({progress:state.progress,stats:state.stats}))}catch(e){}updateStats();updateBadges()}
+function load(){try{const d=localStorage.getItem('mwb');if(d){const p=JSON.parse(d);state.progress=p.progress||{};state.stats=p.stats||{total:0,correct:0,streak:0}}}catch(e){console.warn('localStorage load failed:',e)}updateStats();updateBadges()}
+function save(){try{localStorage.setItem('mwb',JSON.stringify({progress:state.progress,stats:state.stats}))}catch(e){console.warn('localStorage save failed:',e)}updateStats();updateBadges()}
 function updateStats(){document.getElementById('totalSolved').textContent=state.stats.total;const acc=state.stats.total>0?Math.round(state.stats.correct/state.stats.total*100):0;document.getElementById('accuracy').textContent=acc+'%';document.getElementById('streak').textContent=state.stats.streak}
 function updateBadges(){[1,2,3].forEach(g=>{const units=[...(curriculum[g][1]||[]),...(curriculum[g][2]||[])];let t=0,s=0;units.forEach(u=>{t+=u.problemCount;const up=state.progress[u.id]||{};s+=Object.keys(up).filter(k=>up[k]).length});document.getElementById(`g${g}-badge`).textContent=Math.round(s/t*100)+'%'})}
 
