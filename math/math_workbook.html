@@ -230,6 +230,7 @@ const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a};
 const lcm=(a,b)=>(a*b)/gcd(a,b);
 const pf=n=>{const f={};let d=2;while(d*d<=n){while(n%d===0){f[d]=(f[d]||0)+1;n/=d}d++}if(n>1)f[n]=(f[n]||0)+1;return Object.entries(f).map(([p,e])=>e>1?`${p}^${e}`:p).join('×')||'1'};
 const sf=(n,d)=>{const g=gcd(n,d);return d/g===1?`${n/g}`:`${n/g}/${d/g}`};
+const SQRT3=1.73; // √3 approximation for calculations
 
 // Curriculum Data
 const curriculum = {
@@ -309,102 +310,216 @@ const gen = {
         (r,i)=>{const b=r.int(2,9),e=r.int(2,4),a=Math.pow(b,e);return{type:'input',diff:'easy',text:`${b}의 ${e}제곱의 값은?`,ans:a+'',sol:`${b}^${e} = ${a}`}},
         (r,i)=>{const nums=[12,18,24,30,36,40,48,60,72,84];const n=nums[r.int(0,nums.length-1)];return{type:'input',diff:'medium',text:`${n}을 소인수분해하시오. (예: 2^2×3)`,ans:pf(n),sol:`${n} = ${pf(n)}`}},
         (r,i)=>{const pairs=[[12,18],[24,36],[20,30],[15,25],[18,24]];const[a,b]=pairs[r.int(0,pairs.length-1)];const g=gcd(a,b);return{type:'input',diff:'medium',text:`${a}과 ${b}의 최대공약수는?`,ans:g+'',sol:`GCD(${a},${b}) = ${g}`}},
-        (r,i)=>{const pairs=[[4,6],[6,9],[8,12],[10,15]];const[a,b]=pairs[r.int(0,pairs.length-1)];const l=lcm(a,b);return{type:'input',diff:'medium',text:`${a}과 ${b}의 최소공배수는?`,ans:l+'',sol:`LCM(${a},${b}) = ${l}`}}
+        (r,i)=>{const pairs=[[4,6],[6,9],[8,12],[10,15]];const[a,b]=pairs[r.int(0,pairs.length-1)];const l=lcm(a,b);return{type:'input',diff:'medium',text:`${a}과 ${b}의 최소공배수는?`,ans:l+'',sol:`LCM(${a},${b}) = ${l}`}},
+        (r,i)=>{const triples=[[12,18,24],[15,20,30],[8,12,16],[18,27,36]];const[a,b,c]=triples[r.int(0,triples.length-1)];const g=gcd(gcd(a,b),c);return{type:'input',diff:'hard',text:`${a}, ${b}, ${c} 세 수의 최대공약수는?`,ans:g+'',sol:`GCD(${a},${b},${c}) = ${g}`}},
+        (r,i)=>{const triples=[[2,3,4],[3,4,5],[4,5,6],[2,5,7]];const[a,b,c]=triples[r.int(0,triples.length-1)];const l=lcm(lcm(a,b),c);return{type:'input',diff:'hard',text:`${a}, ${b}, ${c} 세 수의 최소공배수는?`,ans:l+'',sol:`LCM(${a},${b},${c}) = ${l}`}},
+        (r,i)=>{const nums=[180,252,360,420];const n=nums[r.int(0,nums.length-1)];return{type:'input',diff:'hard',text:`${n}을 소인수분해하시오. (예: 2^2×3^2×5)`,ans:pf(n),sol:`${n} = ${pf(n)}`}},
+        (r,i)=>{const pairs=[[24,36],[48,60],[36,54],[72,90]];const[a,b]=pairs[r.int(0,pairs.length-1)];const g=gcd(a,b),l=lcm(a,b);return{type:'input',diff:'hard',text:`${a}와 ${b}의 최대공약수와 최소공배수의 곱은?`,ans:(g*l)+'',sol:`GCD×LCM = ${g}×${l} = ${g*l} (또는 ${a}×${b})`}}
     ],
     'g1s1u2': [
         (r,i)=>{const a=r.int(-12,12),b=r.int(-12,12);return{type:'input',diff:'easy',text:`(${a}) + (${b}) = ?`,ans:(a+b)+'',sol:`${a}+${b}=${a+b}`}},
         (r,i)=>{const a=r.int(-10,10),b=r.int(-10,10);if(a===0||b===0)return gen['g1s1u2'][1](r,i);return{type:'input',diff:'easy',text:`(${a}) × (${b}) = ?`,ans:(a*b)+'',sol:`부호가 ${(a>0)===(b>0)?'같으면 +':'다르면 -'}: ${a*b}`}},
-        (r,i)=>{const a=r.int(-15,15);return{type:'input',diff:'easy',text:`|${a}|의 값은?`,ans:Math.abs(a)+'',sol:`|${a}| = ${Math.abs(a)}`}}
+        (r,i)=>{const a=r.int(-15,15);return{type:'input',diff:'easy',text:`|${a}|의 값은?`,ans:Math.abs(a)+'',sol:`|${a}| = ${Math.abs(a)}`}},
+        (r,i)=>{const cases=[[(-6),(-4),8],[(-8),(-3),6],[(-4),(-6),8],[(-6),(-2),4]];const[a,b,c]=cases[r.int(0,cases.length-1)];const result=(a*b)/c;return{type:'input',diff:'medium',text:`(${a}) × (${b}) ÷ (${c}) = ?`,ans:result+'',sol:`${a}×${b}÷${c}=${result}`}},
+        (r,i)=>{const a=r.int(-5,-2),b=r.int(2,4);return{type:'input',diff:'hard',text:`(${a})³ × (${b})² = ?`,ans:(Math.pow(a,3)*Math.pow(b,2))+'',sol:`(${a})³×(${b})² = ${Math.pow(a,3)}×${Math.pow(b,2)} = ${Math.pow(a,3)*Math.pow(b,2)}`}},
+        (r,i)=>{const a=r.int(-10,10),b=r.int(-10,10);if(a===b){const na=a+1,nb=b-1;return{type:'input',diff:'hard',text:`|${na}| - |${nb}| + |${na}-${nb}| = ?`,ans:(Math.abs(na)-Math.abs(nb)+Math.abs(na-nb))+'',sol:`|${na}|-|${nb}|+|${na-nb}| = ${Math.abs(na)}-${Math.abs(nb)}+${Math.abs(na-nb)} = ${Math.abs(na)-Math.abs(nb)+Math.abs(na-nb)}`}}return{type:'input',diff:'hard',text:`|${a}| - |${b}| + |${a}-${b}| = ?`,ans:(Math.abs(a)-Math.abs(b)+Math.abs(a-b))+'',sol:`|${a}|-|${b}|+|${a-b}| = ${Math.abs(a)}-${Math.abs(b)}+${Math.abs(a-b)} = ${Math.abs(a)-Math.abs(b)+Math.abs(a-b)}`}},
+        (r,i)=>{const a=r.int(-6,-2),b=r.int(-5,-1),c=r.int(-4,-1);return{type:'input',diff:'hard',text:`(${a}) + (${b}) - (${c}) = ?`,ans:(a+b-c)+'',sol:`${a}+${b}-${c} = ${a+b-c}`}}
     ],
     'g1s1u3': [
         (r,i)=>{const a=r.int(2,8),b=r.int(1,12);const x=b/a;if(!Number.isInteger(x))return gen['g1s1u3'][0](r,i+1);return{type:'input',diff:'easy',text:`${a}x = ${b}일 때 x는?`,ans:x+'',sol:`x = ${b}÷${a} = ${x}`}},
         (r,i)=>{const a=r.int(2,5),b=r.int(1,8),c=r.int(5,20);const x=(c-b)/a;if(!Number.isInteger(x)||x<0)return gen['g1s1u3'][1](r,i+1);return{type:'input',diff:'medium',text:`${a}x + ${b} = ${c}일 때 x는?`,ans:x+'',sol:`${a}x=${c-b}, x=${x}`}},
-        (r,i)=>{const c1=r.int(2,6),c2=r.int(2,6);return{type:'input',diff:'easy',text:`${c1}x + ${c2}x를 계산하면? (예: 5x)`,ans:`${c1+c2}x`,sol:`${c1}x+${c2}x=${c1+c2}x`}}
+        (r,i)=>{const c1=r.int(2,6),c2=r.int(2,6);return{type:'input',diff:'easy',text:`${c1}x + ${c2}x를 계산하면? (예: 5x)`,ans:`${c1+c2}x`,sol:`${c1}x+${c2}x=${c1+c2}x`}},
+        (r,i)=>{const cases=[[4,5,2,3,5],[3,4,2,6,4],[5,3,3,4,2],[4,6,2,8,3]];const[a,b,c,d,x]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`${a}x - ${b*c} = -${b}x + ${d}일 때 x는?`,ans:x+'',sol:`${a}x+${b}x = ${b*c}+${d}, ${a+b}x=${b*c+d}, x=${x}`}},
+        (r,i)=>{const cases=[[3,1,8,2],[4,2,10,2],[5,1,12,2],[2,1,6,2]];const[a,b,c,x]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`${a}(x+${b}) = ${c}일 때 x는?`,ans:x+'',sol:`${a}x+${a*b}=${c}, ${a}x=${c-a*b}, x=${x}`}},
+        (r,i)=>{const cases=[[4,2,3,8,2],[5,3,2,7,2],[3,1,2,4,1],[6,2,4,6,2]];const[a,b,c,d,x]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`${a}x + ${b} = ${c}x + ${d}일 때 x는?`,ans:x+'',sol:`${a}x-${c}x = ${d}-${b}, ${a-c}x=${d-b}, x=${x}`}}
     ],
     'g1s1u4': [
         (r,i)=>{const a=r.int(2,6),x=r.int(1,5);return{type:'input',diff:'easy',text:`y=${a}x에서 x=${x}일 때 y는?`,ans:(a*x)+'',sol:`y=${a}×${x}=${a*x}`}},
         (r,i)=>{const a=r.int(6,30),x=r.int(2,5);if(a%x!==0)return gen['g1s1u4'][1](r,i+1);return{type:'input',diff:'medium',text:`y=${a}/x에서 x=${x}일 때 y는?`,ans:(a/x)+'',sol:`y=${a}/${x}=${a/x}`}},
-        (r,i)=>{const x=r.int(-4,4),y=r.int(-4,4);if(x===0||y===0)return gen['g1s1u4'][2](r,i+1);const q=x>0&&y>0?1:x<0&&y>0?2:x<0&&y<0?3:4;return{type:'input',diff:'easy',text:`점 (${x},${y})는 제 몇 사분면? (숫자만)`,ans:q+'',sol:`(${x>0?'+':'-'},${y>0?'+':'-'}) → 제${q}사분면`}}
+        (r,i)=>{const x=r.int(-4,4),y=r.int(-4,4);if(x===0||y===0)return gen['g1s1u4'][2](r,i+1);const q=x>0&&y>0?1:x<0&&y>0?2:x<0&&y<0?3:4;return{type:'input',diff:'easy',text:`점 (${x},${y})는 제 몇 사분면? (숫자만)`,ans:q+'',sol:`(${x>0?'+':'-'},${y>0?'+':'-'}) → 제${q}사분면`}},
+        (r,i)=>{const a=r.int(2,5),y=r.int(4,20);if(y%a!==0)return gen['g1s1u4'][3](r,i+1);return{type:'input',diff:'medium',text:`y=${a}x에서 y=${y}일 때 x는?`,ans:(y/a)+'',sol:`${y}=${a}x, x=${y/a}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(1,5);return{type:'input',diff:'hard',text:`y=${a}x가 점 (${b}, k)를 지날 때 k는?`,ans:(a*b)+'',sol:`k=${a}×${b}=${a*b}`}},
+        (r,i)=>{const k=r.int(6,24);const x=r.int(2,4);if(k%x!==0)return gen['g1s1u4'][5](r,i+1);return{type:'input',diff:'hard',text:`y=k/x가 점 (${x}, ${k/x})를 지날 때 k는?`,ans:k+'',sol:`${k/x}=k/${x}, k=${k}`}},
+        (r,i)=>{const a=r.int(-3,3),b=r.int(-3,3);if(a===0||b===0)return gen['g1s1u4'][6](r,i+1);return{type:'input',diff:'hard',text:`점 (${a}, ${b})와 원점 사이의 거리는? (소수점 첫째자리까지, 예: 3.6)`,ans:Math.sqrt(a*a+b*b).toFixed(1),sol:`√(${a}²+${b}²) = √${a*a+b*b} ≈ ${Math.sqrt(a*a+b*b).toFixed(1)}`}}
     ],
     'g1s2u1': [
         (r,i)=>{const a=r.int(30,150);return{type:'input',diff:'easy',text:`맞꼭지각이 ${a}°일 때 반대편 맞꼭지각은?`,ans:a+'',sol:`맞꼭지각은 같다: ${a}°`}},
-        (r,i)=>{const a=r.int(40,140);return{type:'input',diff:'easy',text:`평행선에서 동위각이 ${a}°일 때 엇각은?`,ans:a+'',sol:`평행선에서 동위각=엇각: ${a}°`}}
+        (r,i)=>{const a=r.int(40,140);return{type:'input',diff:'easy',text:`평행선에서 동위각이 ${a}°일 때 엇각은?`,ans:a+'',sol:`평행선에서 동위각=엇각: ${a}°`}},
+        (r,i)=>{const a=r.int(30,80);return{type:'input',diff:'medium',text:`두 직선이 만날 때 한 각이 ${a}°이면 이웃한 각은?`,ans:(180-a)+'',sol:`${a}°+x=180°, x=${180-a}°`}},
+        (r,i)=>{const a=r.int(40,70);return{type:'input',diff:'hard',text:`평행선과 한 직선이 만날 때 동위각이 ${a}°이면, 같은 쪽 내각의 합은?`,ans:'180',sol:`동위각과 같은 쪽 내각은 보각: ${a}°+(180-${a})°=180°`}},
+        (r,i)=>{const a=r.int(35,75),b=r.int(40,80);return{type:'input',diff:'hard',text:`평행한 두 직선 사이 삼각형에서 두 밑각이 ${a}°, ${b}°일 때 꼭지각은?`,ans:(180-a-b)+'',sol:`삼각형 내각의 합: ${a}+${b}+x=180, x=${180-a-b}°`}},
+        (r,i)=>{const x=r.int(2,6);const a=50+x*10;return{type:'input',diff:'hard',text:`맞꼭지각 중 하나가 (5x+${a-5*x})°이고 크기가 ${a}°일 때 x는?`,ans:x+'',sol:`5x+${a-5*x}=${a}, 5x=${5*x}, x=${x}`}}
     ],
     'g1s2u2': [
         (r,i)=>{const n=r.int(5,8);const a=(n-2)*180;return{type:'input',diff:'easy',text:`${n}각형의 내각의 합은? (도)`,ans:a+'',sol:`(${n}-2)×180=${a}°`}},
         (r,i)=>{const rd=r.int(2,8);return{type:'input',diff:'easy',text:`반지름 ${rd}cm인 원의 둘레는? (π 사용)`,ans:`${2*rd}π`,sol:`2π×${rd}=${2*rd}π cm`}},
-        (r,i)=>{const n=r.int(4,8);const d=n*(n-3)/2;return{type:'input',diff:'medium',text:`${n}각형의 대각선 개수는?`,ans:d+'',sol:`${n}(${n}-3)/2=${d}`}}
+        (r,i)=>{const n=r.int(4,8);const d=n*(n-3)/2;return{type:'input',diff:'medium',text:`${n}각형의 대각선 개수는?`,ans:d+'',sol:`${n}(${n}-3)/2=${d}`}},
+        (r,i)=>{const rd=r.int(2,6);return{type:'input',diff:'medium',text:`반지름 ${rd}cm인 원의 넓이는? (π 사용)`,ans:`${rd*rd}π`,sol:`π×${rd}²=${rd*rd}π cm²`}},
+        (r,i)=>{const n=r.int(6,10);const ea=(n-2)*180/n;return{type:'input',diff:'hard',text:`정${n}각형의 한 내각의 크기는?`,ans:ea+'',sol:`(${n}-2)×180÷${n}=${ea}°`}},
+        (r,i)=>{const n=r.int(5,9);return{type:'input',diff:'hard',text:`정${n}각형의 한 외각의 크기는?`,ans:(360/n)+'',sol:`360÷${n}=${360/n}°`}},
+        (r,i)=>{const rd=r.int(3,6),deg=r.int(2,4)*30;const arc=2*rd*deg/360;return{type:'input',diff:'hard',text:`반지름 ${rd}cm, 중심각 ${deg}°인 부채꼴의 호의 길이는? (π 사용)`,ans:`${arc}π`,sol:`2π×${rd}×(${deg}/360)=${arc}π cm`}},
+        (r,i)=>{const rd=r.int(2,5),deg=r.int(2,4)*30;const area=rd*rd*deg/360;return{type:'input',diff:'hard',text:`반지름 ${rd}cm, 중심각 ${deg}°인 부채꼴의 넓이는? (π 사용)`,ans:`${area}π`,sol:`π×${rd}²×(${deg}/360)=${area}π cm²`}}
     ],
     'g1s2u3': [
         (r,i)=>{const rd=r.int(2,5),h=r.int(3,8);return{type:'input',diff:'medium',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원기둥 부피는? (π 사용)`,ans:`${rd*rd*h}π`,sol:`π×${rd}²×${h}=${rd*rd*h}π cm³`}},
-        (r,i)=>{const rd=r.int(3,6),h=r.int(3,9);const v=(rd*rd*h);if(v%3!==0)return gen['g1s2u3'][1](r,i+1);return{type:'input',diff:'hard',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원뿔 부피는? (π 사용)`,ans:`${v/3}π`,sol:`(1/3)×π×${rd}²×${h}=${v/3}π cm³`}}
+        (r,i)=>{const rd=r.int(3,6),h=r.int(3,9);const v=(rd*rd*h);if(v%3!==0)return gen['g1s2u3'][1](r,i+1);return{type:'input',diff:'hard',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원뿔 부피는? (π 사용)`,ans:`${v/3}π`,sol:`(1/3)×π×${rd}²×${h}=${v/3}π cm³`}},
+        (r,i)=>{const a=r.int(2,5),b=r.int(3,6),h=r.int(2,5);return{type:'input',diff:'easy',text:`밑면이 ${a}cm×${b}cm이고 높이가 ${h}cm인 직육면체 부피는?`,ans:(a*b*h)+'',sol:`${a}×${b}×${h}=${a*b*h} cm³`}},
+        (r,i)=>{const r1=[3,6][r.int(0,1)];const v=(4*r1*r1*r1)/3;return{type:'input',diff:'hard',text:`반지름 ${r1}cm인 구의 부피는? (π 사용)`,ans:`${v}π`,sol:`(4/3)×π×${r1}³=${v}π cm³`}},
+        (r,i)=>{const rd=r.int(2,4),h=r.int(3,6);const sa=2*rd*rd+2*rd*h;return{type:'input',diff:'hard',text:`밑면 반지름 ${rd}cm, 높이 ${h}cm인 원기둥 겉넓이는? (π 사용)`,ans:`${sa}π`,sol:`2π×${rd}²+2π×${rd}×${h}=${sa}π cm²`}},
+        (r,i)=>{const cases=[[3,6,18],[6,6,72],[3,9,27],[6,3,36]];const[a,h,v]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`밑면이 한 변 ${a}cm인 정사각형이고 높이가 ${h}cm인 사각뿔 부피는?`,ans:v+'',sol:`(1/3)×${a}²×${h}=${v} cm³`}}
     ],
     'g1s2u4': [
         (r,i)=>{const vals=[70,80,90,85,75];const m=80;return{type:'input',diff:'easy',text:`자료 ${vals.join(', ')}의 평균은?`,ans:m+'',sol:`(${vals.join('+')})/5=${m}`}},
-        (r,i)=>{const tot=r.int(2,5)*10,freq=r.int(4,tot/2);const rd=freq/tot;return{type:'input',diff:'medium',text:`전체도수 ${tot}, 계급도수 ${freq}일 때 상대도수는?`,ans:rd+'',sol:`${freq}/${tot}=${rd}`}}
+        (r,i)=>{const tot=r.int(2,5)*10,freq=r.int(4,tot/2);const rd=freq/tot;return{type:'input',diff:'medium',text:`전체도수 ${tot}, 계급도수 ${freq}일 때 상대도수는?`,ans:rd+'',sol:`${freq}/${tot}=${rd}`}},
+        (r,i)=>{const vals=[60,70,80,90,100];return{type:'input',diff:'medium',text:`자료 ${vals.join(', ')}의 중앙값은?`,ans:'80',sol:`5개 자료의 중앙값 = 3번째 값 = 80`}},
+        (r,i)=>{const rd=r.int(1,4)/10;const tot=50;const freq=rd*tot;return{type:'input',diff:'hard',text:`상대도수 ${rd}, 전체도수 ${tot}일 때 계급도수는?`,ans:freq+'',sol:`${rd}×${tot}=${freq}`}},
+        (r,i)=>{const vals=[75,80,85,90];const avg=(75+80+85+90)/4;const x=5*avg-(75+80+85+90);return{type:'input',diff:'hard',text:`자료 75, 80, 85, 90, x의 평균이 ${avg}일 때 x는?`,ans:(5*avg-330)+'',sol:`(75+80+85+90+x)/5=${avg}, x=${5*avg-330}`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`도수분포표에서 상대도수의 총합은 항상?`,ans:'1',sol:`모든 상대도수의 합 = 1`}}
     ],
     'g2s1u1': [
-        (r,i)=>{const rep=r.int(1,9);const g=gcd(rep,9);return{type:'input',diff:'medium',text:`0.${rep}${rep}${rep}...을 분수로 (기약분수)`,ans:sf(rep,9),sol:`x=0.${rep}..., 9x=${rep}, x=${sf(rep,9)}`}}
+        (r,i)=>{const rep=r.int(1,9);const g=gcd(rep,9);return{type:'input',diff:'medium',text:`0.${rep}${rep}${rep}...을 분수로 (기약분수)`,ans:sf(rep,9),sol:`x=0.${rep}..., 9x=${rep}, x=${sf(rep,9)}`}},
+        (r,i)=>{const rep=r.int(1,9);return{type:'input',diff:'easy',text:`1/${rep}을 소수로 나타내면 유한소수인가, 무한소수인가?`,ans:[1,2,4,5,8].includes(rep)?'유한소수':'무한소수',sol:`분모 ${rep}의 소인수: ${[1,2,4,5,8].includes(rep)?'2,5만 있음→유한소수':'2,5외 있음→무한소수'}`}},
+        (r,i)=>{const a=r.int(1,4),b=r.int(1,4);if(a===b)return gen['g2s1u1'][2](r,i+1);const num=a*10+b;return{type:'input',diff:'hard',text:`0.${a}${b}${a}${b}...을 분수로 (기약분수)`,ans:sf(num,99),sol:`x=0.${a}${b}..., 99x=${num}, x=${sf(num,99)}`}},
+        (r,i)=>{const cases=[[12,3],[18,2],[15,5],[24,4]];const[den,num]=cases[r.int(0,cases.length-1)];return{type:'input',diff:'hard',text:`${num}/${den}을 기약분수로 나타내면?`,ans:sf(num,den),sol:`GCD(${num},${den})=${gcd(num,den)}, ${sf(num,den)}`}}
     ],
     'g2s1u2': [
         (r,i)=>{const b=r.int(2,4),m=r.int(2,4),n=r.int(2,4);return{type:'input',diff:'easy',text:`${b}^${m} × ${b}^${n} = ? (예: 2^5)`,ans:`${b}^${m+n}`,sol:`${b}^${m}×${b}^${n}=${b}^${m+n}`}},
-        (r,i)=>{const b=r.int(2,4),m=r.int(2,3),n=r.int(2,3);return{type:'input',diff:'medium',text:`(${b}^${m})^${n} = ? (예: 2^6)`,ans:`${b}^${m*n}`,sol:`(${b}^${m})^${n}=${b}^${m*n}`}}
+        (r,i)=>{const b=r.int(2,4),m=r.int(2,3),n=r.int(2,3);return{type:'input',diff:'medium',text:`(${b}^${m})^${n} = ? (예: 2^6)`,ans:`${b}^${m*n}`,sol:`(${b}^${m})^${n}=${b}^${m*n}`}},
+        (r,i)=>{const b=r.int(2,4),m=r.int(4,6),n=r.int(2,3);if(m<=n)return gen['g2s1u2'][2](r,i+1);return{type:'input',diff:'medium',text:`${b}^${m} ÷ ${b}^${n} = ? (예: 2^3)`,ans:`${b}^${m-n}`,sol:`${b}^${m}÷${b}^${n}=${b}^${m-n}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(2,4);return{type:'input',diff:'hard',text:`(${a}x²y)³을 계산하면? (예: 8x^6y^3)`,ans:`${a*a*a}x^6y^3`,sol:`${a}³×(x²)³×y³=${a*a*a}x^6y^3`}},
+        (r,i)=>{const a=r.int(2,3),n=r.int(2,3);return{type:'input',diff:'hard',text:`(${a}ab²)^${n}을 계산하면? (예: 4a^2b^4)`,ans:`${Math.pow(a,n)}a^${n}b^${2*n}`,sol:`${a}^${n}×a^${n}×(b²)^${n}=${Math.pow(a,n)}a^${n}b^${2*n}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(2,4);return{type:'input',diff:'hard',text:`${a*b}x³y² ÷ ${a}xy = ? (예: 3x^2y)`,ans:`${b}x^2y`,sol:`(${a*b}÷${a})x^(3-1)y^(2-1)=${b}x²y`}}
     ],
     'g2s1u3': [
         (r,i)=>{const a=r.int(2,5),b=r.int(6,20);const x=b/a;if(!Number.isInteger(x))return gen['g2s1u3'][0](r,i+1);return{type:'input',diff:'easy',text:`${a}x < ${b}의 해는? (예: x<5)`,ans:`x<${x}`,sol:`x<${b}/${a}=${x}`}},
-        (r,i)=>{const a=r.int(2,4),b=r.int(6,15);const x=b/a;if(!Number.isInteger(x))return gen['g2s1u3'][1](r,i+1);return{type:'input',diff:'medium',text:`-${a}x < ${b}의 해는?`,ans:`x>-${x}`,sol:`음수로 나누면 부등호 반대! x>-${x}`}}
+        (r,i)=>{const a=r.int(2,4),b=r.int(6,15);const x=b/a;if(!Number.isInteger(x))return gen['g2s1u3'][1](r,i+1);return{type:'input',diff:'medium',text:`-${a}x < ${b}의 해는?`,ans:`x>-${x}`,sol:`음수로 나누면 부등호 반대! x>-${x}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(1,5),c=r.int(10,20);const x=(c-b)/a;if(!Number.isInteger(x)||x<=0)return gen['g2s1u3'][2](r,i+1);return{type:'input',diff:'medium',text:`${a}x + ${b} ≤ ${c}의 해는?`,ans:`x≤${x}`,sol:`${a}x≤${c-b}, x≤${x}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(3,8),c=r.int(1,3),d=r.int(10,18);const x=(d+b)/(a+c);if(!Number.isInteger(x)||x<=0)return gen['g2s1u3'][3](r,i+1);return{type:'input',diff:'hard',text:`${a}x - ${b} > -${c}x + ${d}의 해는?`,ans:`x>${x}`,sol:`${a+c}x>${d+b}, x>${x}`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`2x + 3 < 7 and x + 1 > 0을 만족하는 정수 x의 개수는?`,ans:'2',sol:`x<2이고 x>-1, 정수: 0,1 → 2개`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(5,12);const lo=Math.ceil(-b/a),hi=Math.floor(b/a);return{type:'input',diff:'hard',text:`-${b} ≤ ${a}x ≤ ${b}를 만족하는 정수 x의 개수는?`,ans:(hi-lo+1)+'',sol:`${lo}≤x≤${hi}, 개수=${hi-lo+1}`}}
     ],
     'g2s1u4': [
-        (r,i)=>{const x=r.int(2,5),y=r.int(1,4);const s=x+y,d=x-y;if(d<=0)return gen['g2s1u4'][0](r,i+1);return{type:'input',diff:'medium',text:`x+y=${s}, x-y=${d}일 때 (x,y)는? (예: 3,2)`,ans:`${x},${y}`,sol:`더하면 2x=${s+d}, x=${x}, y=${y}`}}
+        (r,i)=>{const x=r.int(2,5),y=r.int(1,4);const s=x+y,d=x-y;if(d<=0)return gen['g2s1u4'][0](r,i+1);return{type:'input',diff:'medium',text:`x+y=${s}, x-y=${d}일 때 (x,y)는? (예: 3,2)`,ans:`${x},${y}`,sol:`더하면 2x=${s+d}, x=${x}, y=${y}`}},
+        (r,i)=>{const x=r.int(2,5),y=r.int(1,4);const a=2*x+y,b=x+y;return{type:'input',diff:'medium',text:`2x+y=${a}, x+y=${b}일 때 (x,y)는?`,ans:`${x},${y}`,sol:`빼면 x=${x}, y=${b-x}=${y}`}},
+        (r,i)=>{const x=r.int(1,4),y=r.int(2,5);const a=3*x+2*y,b=x+y;return{type:'input',diff:'hard',text:`3x+2y=${a}, x+y=${b}일 때 (x,y)는?`,ans:`${x},${y}`,sol:`두 번째 식 2배 빼면 x=${x}, y=${y}`}},
+        (r,i)=>{const x=r.int(2,6),y=r.int(1,4);const sum=x+y,diff=x-y;if(diff<=0)return gen['g2s1u4'][3](r,i+1);return{type:'input',diff:'hard',text:`연속하지 않는 두 수의 합이 ${sum}이고 차가 ${diff}일 때 큰 수는?`,ans:x+'',sol:`(${sum}+${diff})/2=${x}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(1,3),c=r.int(10,20),d=r.int(5,15);const x=(c-d)/(a-b);const y=c-a*x;if(!Number.isInteger(x)||!Number.isInteger(y)||x<=0||y<=0||a===b)return gen['g2s1u4'][4](r,i+1);return{type:'input',diff:'hard',text:`${a}x+y=${c}, ${b}x+y=${d}일 때 x+y는?`,ans:(x+y)+'',sol:`빼면 ${a-b}x=${c-d}, x=${x}, y=${y}, x+y=${x+y}`}}
     ],
     'g2s1u5': [
         (r,i)=>{const a=r.int(1,4),b=r.int(-4,4);return{type:'input',diff:'easy',text:`y=${a}x${b>=0?'+':''}${b}의 기울기는?`,ans:a+'',sol:`y=ax+b에서 기울기=a=${a}`}},
-        (r,i)=>{const a=r.int(1,4),b=r.int(-5,5);return{type:'input',diff:'easy',text:`y=${a}x${b>=0?'+':''}${b}의 y절편은?`,ans:b+'',sol:`y=ax+b에서 y절편=b=${b}`}}
+        (r,i)=>{const a=r.int(1,4),b=r.int(-5,5);return{type:'input',diff:'easy',text:`y=${a}x${b>=0?'+':''}${b}의 y절편은?`,ans:b+'',sol:`y=ax+b에서 y절편=b=${b}`}},
+        (r,i)=>{const x1=r.int(0,3),y1=r.int(1,5),x2=r.int(4,6),y2=r.int(6,10);if(x1===x2)return gen['g2s1u5'][2](r,i+1);const slope=(y2-y1)/(x2-x1);if(!Number.isInteger(slope))return gen['g2s1u5'][2](r,i+1);return{type:'input',diff:'medium',text:`두 점 (${x1},${y1}), (${x2},${y2})를 지나는 직선의 기울기는?`,ans:slope+'',sol:`(${y2}-${y1})/(${x2}-${x1})=${slope}`}},
+        (r,i)=>{const a=r.int(1,3),b=r.int(-4,4);const xint=-b/a;if(!Number.isInteger(xint))return gen['g2s1u5'][3](r,i+1);return{type:'input',diff:'hard',text:`y=${a}x${b>=0?'+':''}${b}의 x절편은?`,ans:xint+'',sol:`0=${a}x+${b}, x=${xint}`}},
+        (r,i)=>{const a=r.int(1,3),b=r.int(1,5);return{type:'input',diff:'hard',text:`기울기가 ${a}이고 점 (2,${2*a+b})를 지나는 직선의 y절편은?`,ans:b+'',sol:`${2*a+b}=${a}×2+b, b=${b}`}},
+        (r,i)=>{const a=r.int(2,4);return{type:'input',diff:'hard',text:`y=${a}x+1과 평행한 직선의 기울기는?`,ans:a+'',sol:`평행 → 기울기 같음 = ${a}`}}
     ],
     'g2s2u1': [
-        (r,i)=>{const v=r.int(40,100);if((180-v)%2!==0)return gen['g2s2u1'][0](r,i+1);const b=(180-v)/2;return{type:'input',diff:'easy',text:`이등변삼각형 꼭지각이 ${v}°일 때 밑각은?`,ans:b+'',sol:`(180-${v})/2=${b}°`}}
+        (r,i)=>{const v=r.int(40,100);if((180-v)%2!==0)return gen['g2s2u1'][0](r,i+1);const b=(180-v)/2;return{type:'input',diff:'easy',text:`이등변삼각형 꼭지각이 ${v}°일 때 밑각은?`,ans:b+'',sol:`(180-${v})/2=${b}°`}},
+        (r,i)=>{const b=r.int(50,80);const v=180-2*b;return{type:'input',diff:'medium',text:`이등변삼각형 밑각이 ${b}°일 때 꼭지각은?`,ans:v+'',sol:`180-2×${b}=${v}°`}},
+        (r,i)=>{return{type:'choice',diff:'medium',text:`삼각형의 합동조건이 아닌 것은?`,choices:['SSS','SAS','ASA','SSA'],ans:3,sol:`SSA는 합동조건이 아님`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`직각이등변삼각형의 한 예각의 크기는?`,ans:'45',sol:`90+2x=180, x=45°`}},
+        (r,i)=>{const a=r.int(30,60);return{type:'input',diff:'hard',text:`이등변삼각형 외각이 ${180-a}°일 때 꼭지각은? (밑각의 외각인 경우)`,ans:(2*a-180<0?180-2*a:2*a-180)+'',sol:`외각=${180-a}, 밑각=${a}, 꼭지각=${180-2*a}°`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`정삼각형의 한 내각의 크기는?`,ans:'60',sol:`180÷3=60°`}}
     ],
     'g2s2u2': [
-        (r,i)=>{const a=r.int(50,130);return{type:'input',diff:'easy',text:`평행사변형의 한 각이 ${a}°일 때 이웃한 각은?`,ans:(180-a)+'',sol:`180-${a}=${180-a}°`}}
+        (r,i)=>{const a=r.int(50,130);return{type:'input',diff:'easy',text:`평행사변형의 한 각이 ${a}°일 때 이웃한 각은?`,ans:(180-a)+'',sol:`180-${a}=${180-a}°`}},
+        (r,i)=>{const a=r.int(50,130);return{type:'input',diff:'medium',text:`평행사변형의 한 각이 ${a}°일 때 대각은?`,ans:a+'',sol:`대각은 같음: ${a}°`}},
+        (r,i)=>{return{type:'choice',diff:'medium',text:`평행사변형이 직사각형이 되는 조건은?`,choices:['대각선 길이 같음','대각선 수직','한 각 90°','모두'],ans:3,sol:`대각선 길이 같음 또는 한 각 90°`}},
+        (r,i)=>{const d=r.int(6,12);return{type:'input',diff:'hard',text:`평행사변형에서 한 대각선의 길이가 ${d}cm일 때, 대각선이 만나는 점에서 각 꼭짓점까지 거리는?`,ans:(d/2)+'',sol:`대각선은 서로 이등분: ${d}/2=${d/2}cm`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`정사각형의 한 내각의 크기는?`,ans:'90',sol:`정사각형은 직사각형: 90°`}},
+        (r,i)=>{const s=r.int(4,8);return{type:'input',diff:'hard',text:`한 변이 ${s}cm인 마름모에서 둘레는?`,ans:(4*s)+'',sol:`4×${s}=${4*s}cm`}}
     ],
     'g2s2u3': [
-        (r,i)=>{const m=r.int(2,4),n=1;return{type:'input',diff:'medium',text:`닮음비 ${m}:${n}일 때 넓이비는? (예: 4:1)`,ans:`${m*m}:${n*n}`,sol:`넓이비=닮음비²=${m*m}:${n*n}`}}
+        (r,i)=>{const m=r.int(2,4),n=1;return{type:'input',diff:'medium',text:`닮음비 ${m}:${n}일 때 넓이비는? (예: 4:1)`,ans:`${m*m}:${n*n}`,sol:`넓이비=닮음비²=${m*m}:${n*n}`}},
+        (r,i)=>{const m=r.int(2,3),n=1;return{type:'input',diff:'medium',text:`닮음비 ${m}:${n}일 때 부피비는? (예: 8:1)`,ans:`${m*m*m}:${n*n*n}`,sol:`부피비=닮음비³=${m*m*m}:${n*n*n}`}},
+        (r,i)=>{const m=r.int(2,4);return{type:'input',diff:'hard',text:`넓이비가 ${m*m}:1일 때 닮음비는? (예: 3:1)`,ans:`${m}:1`,sol:`√${m*m}:√1=${m}:1`}},
+        (r,i)=>{const a=r.int(6,12),b=r.int(3,6);if(a<=b)return gen['g2s2u3'][3](r,i+1);return{type:'input',diff:'hard',text:`삼각형의 무게중심이 중선을 나누는 비는? (꼭짓점:무게중심:변)`,ans:'2:1',sol:`꼭짓점에서 2:1로 나눔`}},
+        (r,i)=>{const ratio=r.int(2,4);const small=r.int(3,6);const big=small*ratio;return{type:'input',diff:'hard',text:`닮은 두 삼각형에서 작은 삼각형 넓이가 ${small}cm²이고 닮음비가 1:${ratio}일 때 큰 삼각형 넓이는?`,ans:(small*ratio*ratio)+'',sol:`${small}×${ratio}²=${small*ratio*ratio}cm²`}}
     ],
     'g2s2u4': [
-        (r,i)=>{const trips=[[3,4,5],[5,12,13],[6,8,10],[8,15,17]];const[a,b,c]=trips[r.int(0,trips.length-1)];return{type:'input',diff:'easy',text:`직각삼각형에서 두 변이 ${a}, ${b}일 때 빗변은?`,ans:c+'',sol:`${a}²+${b}²=${a*a+b*b}=${c}²`}}
+        (r,i)=>{const trips=[[3,4,5],[5,12,13],[6,8,10],[8,15,17]];const[a,b,c]=trips[r.int(0,trips.length-1)];return{type:'input',diff:'easy',text:`직각삼각형에서 두 변이 ${a}, ${b}일 때 빗변은?`,ans:c+'',sol:`${a}²+${b}²=${a*a+b*b}=${c}²`}},
+        (r,i)=>{const trips=[[3,4,5],[5,12,13],[6,8,10]];const[a,b,c]=trips[r.int(0,trips.length-1)];return{type:'input',diff:'medium',text:`직각삼각형에서 빗변이 ${c}이고 한 변이 ${a}일 때 다른 한 변은?`,ans:b+'',sol:`${c}²-${a}²=${c*c-a*a}=${b}²`}},
+        (r,i)=>{const a=r.int(3,6);return{type:'input',diff:'hard',text:`가로 ${a}cm, 세로 ${a}cm인 정사각형의 대각선 길이는? (√ 사용)`,ans:`${a}√2`,sol:`√(${a}²+${a}²)=√${2*a*a}=${a}√2cm`}},
+        (r,i)=>{const h=r.int(4,8);return{type:'input',diff:'hard',text:`높이가 ${h}cm인 정삼각형의 한 변의 길이는? (소수점 첫째자리, √3≈${SQRT3})`,ans:(h*2/SQRT3).toFixed(1),sol:`a=2h/√3≈${(h*2/SQRT3).toFixed(1)}cm`}},
+        (r,i)=>{const a=r.int(2,5),b=r.int(3,6),c=r.int(4,7);const sq=a*a+b*b;const csq=c*c;return{type:'choice',diff:'hard',text:`세 변이 ${a}, ${b}, ${c}인 삼각형은?`,choices:['예각삼각형','직각삼각형','둔각삼각형'],ans:sq>csq?0:(sq===csq?1:2),sol:`${a}²+${b}²=${sq}, ${c}²=${csq} → ${sq>csq?'예각':sq===csq?'직각':'둔각'}`}}
     ],
     'g2s2u5': [
         (r,i)=>{const a=r.int(3,6),b=r.int(2,5);return{type:'input',diff:'easy',text:`셔츠 ${a}벌, 바지 ${b}벌일 때 경우의 수는?`,ans:(a*b)+'',sol:`곱의법칙: ${a}×${b}=${a*b}`}},
-        (r,i)=>{return{type:'input',diff:'medium',text:`주사위에서 짝수가 나올 확률은? (기약분수)`,ans:'1/2',sol:`짝수: 2,4,6 → 3/6=1/2`}}
+        (r,i)=>{return{type:'input',diff:'medium',text:`주사위에서 짝수가 나올 확률은? (기약분수)`,ans:'1/2',sol:`짝수: 2,4,6 → 3/6=1/2`}},
+        (r,i)=>{const n=r.int(3,5);return{type:'input',diff:'medium',text:`동전 ${n}개를 던질 때 경우의 수는?`,ans:Math.pow(2,n)+'',sol:`2^${n}=${Math.pow(2,n)}`}},
+        (r,i)=>{const n=r.int(4,6);const f=n=>n<=1?1:n*f(n-1);return{type:'input',diff:'hard',text:`${n}명이 한 줄로 설 때 경우의 수는?`,ans:f(n)+'',sol:`${n}!=${f(n)}`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`주사위 2개를 던져 합이 7이 나올 확률은? (기약분수)`,ans:'1/6',sol:`(1,6),(2,5),(3,4),(4,3),(5,2),(6,1) → 6/36=1/6`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`동전 2개를 던져 모두 앞면이 나올 확률은? (기약분수)`,ans:'1/4',sol:`HH 1가지 / 전체 4가지 = 1/4`}},
+        (r,i)=>{const red=r.int(2,4),blue=r.int(3,5);const tot=red+blue;return{type:'input',diff:'hard',text:`빨간 공 ${red}개, 파란 공 ${blue}개 중 1개를 뽑을 때 빨간 공일 확률은? (기약분수)`,ans:sf(red,tot),sol:`${red}/${tot}=${sf(red,tot)}`}}
     ],
     'g3s1u1': [
         (r,i)=>{const sq=[4,9,16,25,36,49,64,81];const n=sq[r.int(0,sq.length-1)];return{type:'input',diff:'easy',text:`√${n}의 값은?`,ans:Math.sqrt(n)+'',sol:`√${n}=${Math.sqrt(n)}`}},
         (r,i)=>{const a=r.int(2,8);return{type:'input',diff:'easy',text:`(√${a})²의 값은?`,ans:a+'',sol:`(√a)²=a → ${a}`}},
-        (r,i)=>{const a=r.int(2,5),b=r.int(2,5);return{type:'input',diff:'medium',text:`√${a}×√${b}를 간단히 (예: √6)`,ans:`√${a*b}`,sol:`√${a}×√${b}=√${a*b}`}}
+        (r,i)=>{const a=r.int(2,5),b=r.int(2,5);return{type:'input',diff:'medium',text:`√${a}×√${b}를 간단히 (예: √6)`,ans:`√${a*b}`,sol:`√${a}×√${b}=√${a*b}`}},
+        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'medium',text:`√${a*a*2}를 간단히 (예: 3√2)`,ans:`${a}√2`,sol:`√${a*a*2}=√(${a}²×2)=${a}√2`}},
+        (r,i)=>{const a=r.int(2,4);return{type:'input',diff:'hard',text:`1/√${a}을 유리화하면? (예: √3/3)`,ans:`√${a}/${a}`,sol:`1/√${a}=√${a}/${a}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(2,4);if(a===b)return gen['g3s1u1'][5](r,i+1);return{type:'input',diff:'hard',text:`√${a}+√${b}와 √${a}-√${b}의 곱은?`,ans:(a-b<0?b-a:a-b)+'',sol:`(√${a}+√${b})(√${a}-√${b})=${a}-${b}=${a-b}`}},
+        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'hard',text:`(√${a}+1)²을 전개하면? (예: 5+2√2)`,ans:`${a+1}+2√${a}`,sol:`${a}+2√${a}+1=${a+1}+2√${a}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(1,3);return{type:'input',diff:'hard',text:`${a}√3+${b}√3를 간단히 (예: 5√3)`,ans:`${a+b}√3`,sol:`(${a}+${b})√3=${a+b}√3`}}
     ],
     'g3s1u2': [
         (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'easy',text:`(x+${a})²을 전개 (예: x^2+6x+9)`,ans:`x^2+${2*a}x+${a*a}`,sol:`x²+${2*a}x+${a*a}`}},
         (r,i)=>{const a=r.int(2,6);return{type:'input',diff:'easy',text:`(x+${a})(x-${a})를 전개 (예: x^2-9)`,ans:`x^2-${a*a}`,sol:`x²-${a*a}`}},
-        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'medium',text:`x²-${a*a}을 인수분해`,ans:`(x+${a})(x-${a})`,sol:`x²-${a}²=(x+${a})(x-${a})`}}
+        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'medium',text:`x²-${a*a}을 인수분해`,ans:`(x+${a})(x-${a})`,sol:`x²-${a}²=(x+${a})(x-${a})`}},
+        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'medium',text:`x²+${2*a}x+${a*a}을 인수분해`,ans:`(x+${a})^2`,sol:`x²+${2*a}x+${a*a}=(x+${a})²`}},
+        (r,i)=>{const a=r.int(1,4),b=r.int(1,4);if(a===b)return gen['g3s1u2'][4](r,i+1);return{type:'input',diff:'hard',text:`x²+${a+b}x+${a*b}을 인수분해`,ans:`(x+${Math.min(a,b)})(x+${Math.max(a,b)})`,sol:`${a}+${b}=${a+b}, ${a}×${b}=${a*b} → (x+${a})(x+${b})`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(1,3);return{type:'input',diff:'hard',text:`(${a}x+${b})²을 전개 (예: 4x^2+12x+9)`,ans:`${a*a}x^2+${2*a*b}x+${b*b}`,sol:`${a*a}x²+${2*a*b}x+${b*b}`}},
+        (r,i)=>{const a=r.int(2,4),b=r.int(1,3);return{type:'input',diff:'hard',text:`(${a}x+${b})(${a}x-${b})를 전개`,ans:`${a*a}x^2-${b*b}`,sol:`${a*a}x²-${b*b}`}},
+        (r,i)=>{const a=r.int(1,3),b=r.int(2,4);return{type:'input',diff:'hard',text:`x²-${a+b}x+${a*b}을 인수분해`,ans:`(x-${Math.min(a,b)})(x-${Math.max(a,b)})`,sol:`-${a}×(-${b})=${a*b}, -${a}+(-${b})=-${a+b} → (x-${a})(x-${b})`}}
     ],
     'g3s1u3': [
         (r,i)=>{const a=r.int(1,5),b=r.int(1,5);if(a===b)return gen['g3s1u3'][0](r,i+1);return{type:'input',diff:'medium',text:`x²+${a+b}x+${a*b}=0의 해는? (작은 수부터)`,ans:`-${Math.max(a,b)},-${Math.min(a,b)}`,sol:`(x+${a})(x+${b})=0 → x=-${a},-${b}`}},
-        (r,i)=>{const a=r.int(2,6);return{type:'input',diff:'easy',text:`x²=${a*a}의 해는? (예: -3,3)`,ans:`-${a},${a}`,sol:`x=±${a}`}}
+        (r,i)=>{const a=r.int(2,6);return{type:'input',diff:'easy',text:`x²=${a*a}의 해는? (예: -3,3)`,ans:`-${a},${a}`,sol:`x=±${a}`}},
+        (r,i)=>{const a=r.int(2,5);return{type:'input',diff:'medium',text:`(x-${a})²=0의 해는?`,ans:a+'',sol:`x-${a}=0, x=${a} (중근)`}},
+        (r,i)=>{const a=r.int(1,4),b=r.int(1,4);if(a===b)return gen['g3s1u3'][3](r,i+1);return{type:'input',diff:'hard',text:`x²-${a+b}x+${a*b}=0의 해는? (작은 수부터)`,ans:`${Math.min(a,b)},${Math.max(a,b)}`,sol:`(x-${a})(x-${b})=0 → x=${a},${b}`}},
+        (r,i)=>{const a=r.int(1,3);const D=a*a+4;return{type:'input',diff:'hard',text:`x²+${a}x-1=0의 판별식 D의 값은?`,ans:D+'',sol:`D=${a}²+4=${D}>0 (서로 다른 두 실근)`}},
+        (r,i)=>{const a=r.int(2,4);return{type:'input',diff:'hard',text:`x²-${2*a}x+${a*a}=0의 근은?`,ans:a+'',sol:`(x-${a})²=0, x=${a} (중근, D=0)`}},
+        (r,i)=>{const p=r.int(1,3),q=r.int(1,4);return{type:'input',diff:'hard',text:`x²-${p+q}x+${p*q}=0에서 두 근의 합은?`,ans:(p+q)+'',sol:`근과 계수 관계: 두 근의 합=${p+q}`}},
+        (r,i)=>{const p=r.int(1,3),q=r.int(1,4);return{type:'input',diff:'hard',text:`x²-${p+q}x+${p*q}=0에서 두 근의 곱은?`,ans:(p*q)+'',sol:`근과 계수 관계: 두 근의 곱=${p*q}`}}
     ],
     'g3s1u4': [
         (r,i)=>{const a=r.int(1,3)*(r.next()>0.5?1:-1);const shape=a>0?'아래로 볼록':'위로 볼록';return{type:'choice',diff:'easy',text:`y=${a}x²의 모양은?`,choices:['아래로 볼록','위로 볼록'],ans:a>0?0:1,sol:`a=${a}${a>0?'>0':'<0'} → ${shape}`}},
-        (r,i)=>{const p=r.int(-3,3),q=r.int(-4,4);return{type:'input',diff:'medium',text:`y=2(x-${p})²+${q}의 꼭짓점은? (예: 2,3)`,ans:`${p},${q}`,sol:`꼭짓점: (${p},${q})`}}
+        (r,i)=>{const p=r.int(-3,3),q=r.int(-4,4);return{type:'input',diff:'medium',text:`y=2(x-${p})²+${q}의 꼭짓점은? (예: 2,3)`,ans:`${p},${q}`,sol:`꼭짓점: (${p},${q})`}},
+        (r,i)=>{const a=r.int(1,3);return{type:'input',diff:'medium',text:`y=${a}x²을 y축 방향으로 3만큼 평행이동한 식은? (예: 2x^2+3)`,ans:`${a}x^2+3`,sol:`y=${a}x²+3`}},
+        (r,i)=>{const a=r.int(1,2),p=r.int(1,3);return{type:'input',diff:'hard',text:`y=${a}(x-${p})²의 축의 방정식은? (예: x=2)`,ans:`x=${p}`,sol:`축: x=${p}`}},
+        (r,i)=>{const a=r.int(1,2),q=r.int(1,5);return{type:'input',diff:'hard',text:`y=-${a}x²+${q}의 최댓값은?`,ans:q+'',sol:`a<0이므로 위로 볼록, 최댓값=${q}`}},
+        (r,i)=>{const a=r.int(1,2),p=r.int(1,3),q=r.int(1,4);return{type:'input',diff:'hard',text:`y=${a}(x-${p})²+${q}의 최솟값은?`,ans:q+'',sol:`a>0이므로 아래볼록, 최솟값=${q}`}},
+        (r,i)=>{const a=r.int(1,2);return{type:'input',diff:'hard',text:`y=${a}x²-${4*a}x+${4*a}을 표준형으로 나타내면? (예: 2(x-1)^2)`,ans:`${a}(x-2)^2`,sol:`${a}(x²-4x+4)=${a}(x-2)²`}},
+        (r,i)=>{const a=r.int(1,2);const c=r.int(1,4);return{type:'input',diff:'hard',text:`y=${a}x²과 y=${c}의 교점의 x좌표는? (예: -1,1)`,ans:`-${Math.sqrt(c/a)},${Math.sqrt(c/a)}`.includes('.')?'계산불가':`-√${c/a},√${c/a}`,sol:`${a}x²=${c}, x²=${c/a}, x=±√${c/a}`}}
     ],
     'g3s2u1': [
-        (r,i)=>{const angs=[{d:30,s:'1/2',c:'√3/2',t:'√3/3'},{d:45,s:'√2/2',c:'√2/2',t:'1'},{d:60,s:'√3/2',c:'1/2',t:'√3'}];const a=angs[r.int(0,2)];const f=['sin','cos','tan'][r.int(0,2)];const v=f==='sin'?a.s:f==='cos'?a.c:a.t;return{type:'input',diff:'easy',text:`${f} ${a.d}°의 값은?`,ans:v,sol:`${f} ${a.d}°=${v}`}}
+        (r,i)=>{const angs=[{d:30,s:'1/2',c:'√3/2',t:'√3/3'},{d:45,s:'√2/2',c:'√2/2',t:'1'},{d:60,s:'√3/2',c:'1/2',t:'√3'}];const a=angs[r.int(0,2)];const f=['sin','cos','tan'][r.int(0,2)];const v=f==='sin'?a.s:f==='cos'?a.c:a.t;return{type:'input',diff:'easy',text:`${f} ${a.d}°의 값은?`,ans:v,sol:`${f} ${a.d}°=${v}`}},
+        (r,i)=>{return{type:'input',diff:'medium',text:`sin²30° + cos²30°의 값은?`,ans:'1',sol:`(1/2)²+(√3/2)²=1/4+3/4=1`}},
+        (r,i)=>{return{type:'input',diff:'medium',text:`tan45°의 값은?`,ans:'1',sol:`tan45°=sin45°/cos45°=1`}},
+        (r,i)=>{const h=r.int(3,8);return{type:'input',diff:'hard',text:`높이 ${h}m인 나무의 그림자가 ${h}m일 때 태양 고도각은?`,ans:'45',sol:`tan θ=${h}/${h}=1, θ=45°`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`sin60°×cos30°의 값은? (기약분수)`,ans:'3/4',sol:`(√3/2)×(√3/2)=3/4`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`sin²45°의 값은? (기약분수)`,ans:'1/2',sol:`(√2/2)²=2/4=1/2`}},
+        (r,i)=>{const a=r.int(3,6);return{type:'input',diff:'hard',text:`빗변이 ${a*2}이고 한 예각이 30°인 직각삼각형에서 30°의 대변의 길이는?`,ans:a+'',sol:`대변=${a*2}×sin30°=${a*2}×1/2=${a}`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`cos60°+sin30°의 값은?`,ans:'1',sol:`1/2+1/2=1`}}
     ],
     'g3s2u2': [
         (r,i)=>{const c=r.int(40,160);if(c%2!==0)return gen['g3s2u2'][0](r,i+1);return{type:'input',diff:'easy',text:`중심각이 ${c}°일 때 원주각은?`,ans:(c/2)+'',sol:`원주각=중심각/2=${c/2}°`}},
-        (r,i)=>{return{type:'input',diff:'easy',text:`반원에 대한 원주각은?`,ans:'90',sol:`반원 중심각=180°, 원주각=90°`}}
+        (r,i)=>{return{type:'input',diff:'easy',text:`반원에 대한 원주각은?`,ans:'90',sol:`반원 중심각=180°, 원주각=90°`}},
+        (r,i)=>{const a=r.int(30,80);return{type:'input',diff:'medium',text:`원주각이 ${a}°일 때 중심각은?`,ans:(2*a)+'',sol:`중심각=원주각×2=${2*a}°`}},
+        (r,i)=>{const a=r.int(40,70);return{type:'input',diff:'hard',text:`같은 호에 대한 두 원주각이 각각 ${a}°, x°일 때 x는?`,ans:a+'',sol:`같은 호 → 원주각 같음: ${a}°`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`원에 내접하는 사각형에서 한 쌍의 대각의 합은?`,ans:'180',sol:`원에 내접 → 대각의 합=180°`}},
+        (r,i)=>{const a=r.int(50,100);return{type:'input',diff:'hard',text:`원에 내접하는 사각형에서 한 각이 ${a}°일 때 대각은?`,ans:(180-a)+'',sol:`대각의 합=180°, ${180-a}°`}},
+        (r,i)=>{const r1=r.int(3,6);return{type:'input',diff:'hard',text:`반지름 ${r1}cm인 원에서 원의 중심과 현의 거리가 ${r1-1}cm일 때, 현의 절반 길이는? (소수점 첫째자리)`,ans:Math.sqrt(r1*r1-(r1-1)*(r1-1)).toFixed(1),sol:`√(${r1}²-${r1-1}²)=${Math.sqrt(r1*r1-(r1-1)*(r1-1)).toFixed(1)}cm`}}
     ],
     'g3s2u3': [
         (r,i)=>{const vals=[2,4,6,8,10];return{type:'input',diff:'medium',text:`자료 2,4,6,8,10의 분산은?`,ans:'8',sol:`평균=6, 편차²합=40, 분산=8`}},
-        (r,i)=>{const v=[4,9,16,25][r.int(0,3)];return{type:'input',diff:'easy',text:`분산이 ${v}이면 표준편차는?`,ans:Math.sqrt(v)+'',sol:`√${v}=${Math.sqrt(v)}`}}
+        (r,i)=>{const v=[4,9,16,25][r.int(0,3)];return{type:'input',diff:'easy',text:`분산이 ${v}이면 표준편차는?`,ans:Math.sqrt(v)+'',sol:`√${v}=${Math.sqrt(v)}`}},
+        (r,i)=>{return{type:'input',diff:'medium',text:`자료 1,2,3,4,5의 평균은?`,ans:'3',sol:`(1+2+3+4+5)/5=15/5=3`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`자료 1,3,5,7,9의 분산은?`,ans:'8',sol:`평균=5, 편차: -4,-2,0,2,4, 편차²합=40, 분산=8`}},
+        (r,i)=>{return{type:'choice',diff:'hard',text:`x가 증가할 때 y도 증가하는 관계는?`,choices:['양의 상관관계','음의 상관관계','상관관계 없음'],ans:0,sol:`x↑y↑ → 양의 상관관계`}},
+        (r,i)=>{return{type:'choice',diff:'hard',text:`x가 증가할 때 y가 감소하는 관계는?`,choices:['양의 상관관계','음의 상관관계','상관관계 없음'],ans:1,sol:`x↑y↓ → 음의 상관관계`}},
+        (r,i)=>{const sd=r.int(2,5);return{type:'input',diff:'hard',text:`표준편차가 ${sd}일 때 분산은?`,ans:(sd*sd)+'',sol:`분산=표준편차²=${sd}²=${sd*sd}`}},
+        (r,i)=>{return{type:'input',diff:'hard',text:`자료 3,3,3,3,3의 표준편차는?`,ans:'0',sol:`모두 같으면 편차=0, 분산=0, 표준편차=0`}}
     ]
 };
 
